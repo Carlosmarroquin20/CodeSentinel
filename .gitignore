@@ -1,0 +1,44 @@
+## Build output
+bin/
+obj/
+out/
+publish/
+
+## IDE
+.vs/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+coverage.*.xml
+coverage.json
+
+## Rider / ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/build/
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Local config / secrets
+appsettings.Development.json
+appsettings.Local.json
+*.env

@@ -1,0 +1,38 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,csx}]
+indent_size = 4
+max_line_length = 120
+
+# Naming and style baseline
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:suggestion
+csharp_prefer_braces = true:suggestion
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+
+# Diagnostics
+dotnet_diagnostic.CA1014.severity = none
+dotnet_diagnostic.CA1515.severity = none
+# LoggerMessage source generators are a performance optimization we defer until a real workload exists.
+dotnet_diagnostic.CA1848.severity = none
+
+[tests/**.cs]
+# xUnit convention: Method_Scenario_Expected naming. Underscores are intentional in tests.
+dotnet_diagnostic.CA1707.severity = none
+
+[*.{xml,csproj,props,targets,yml,yaml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

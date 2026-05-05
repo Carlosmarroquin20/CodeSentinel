@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CodeSentinel.Core</RootNamespace>
+    <AssemblyName>CodeSentinel.Core</AssemblyName>
+    <Description>Domain layer: entities, rule contracts, and scoring policy for CodeSentinel.</Description>
+  </PropertyGroup>
+
+</Project>

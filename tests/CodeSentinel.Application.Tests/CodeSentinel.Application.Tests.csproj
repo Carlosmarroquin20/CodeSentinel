@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CodeSentinel.Core\CodeSentinel.Core.csproj" />
     <ProjectReference Include="..\..\src\CodeSentinel.Application\CodeSentinel.Application.csproj" />
+    <ProjectReference Include="..\..\src\CodeSentinel.Infrastructure\CodeSentinel.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,7 +4,6 @@ using CodeSentinel.Core.Findings;
 using CodeSentinel.Core.Reporting;
 using CodeSentinel.Core.Scanning;
 using CodeSentinel.Core.Scoring;
-using CodeSentinel.Infrastructure.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeSentinel.Application.Tests.Reporting;
@@ -109,7 +108,8 @@ public class ReportServiceTests : IDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddCodeSentinelApplication();
-        services.AddCodeSentinelInfrastructure();
+        // Infrastructure not added here: ReportService only needs IEnumerable<IReportWriter>,
+        // and pulling in the full stack would conflict with the test-controlled writer formats.
         services.AddSingleton(writer);
         return services.BuildServiceProvider();
     }

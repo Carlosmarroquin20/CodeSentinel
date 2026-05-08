@@ -1,5 +1,6 @@
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Infrastructure.FileSystem;
+using CodeSentinel.Infrastructure.Reporting.Json;
 using CodeSentinel.Infrastructure.Rules;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +15,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IIgnorePolicy, NullIgnorePolicy>();
         services.AddSingleton<IFileSource, LocalFileSource>();
         services.AddSingleton<IRuleProvider, BuiltInRuleProvider>();
+        services.AddSingleton<IReportWriter, JsonReportWriter>();
 
         return services;
     }

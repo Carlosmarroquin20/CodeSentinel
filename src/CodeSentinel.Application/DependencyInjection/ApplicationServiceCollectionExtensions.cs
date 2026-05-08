@@ -1,4 +1,5 @@
 using CodeSentinel.Application.Abstractions;
+using CodeSentinel.Application.Reporting;
 using CodeSentinel.Application.Scanning;
 using CodeSentinel.Application.Scoring;
 using CodeSentinel.Core.Scoring;
@@ -14,6 +15,7 @@ public static class ApplicationServiceCollectionExtensions
 
         services.AddSingleton<ISecurityScorePolicy, DefaultSecurityScorePolicy>();
         services.AddSingleton<IScanOrchestrator, ScanOrchestrator>();
+        services.AddSingleton<IReportService, ReportService>();
 
         return services;
     }

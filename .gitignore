@@ -42,3 +42,9 @@ Thumbs.db
 appsettings.Development.json
 appsettings.Local.json
 *.env
+!samples/**/.env
+
+## Generated reports (demo / local runs)
+report-demo.*
+*.report.json
+*.report.html

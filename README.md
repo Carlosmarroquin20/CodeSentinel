@@ -47,27 +47,41 @@ dotnet test  CodeSentinel.sln
 
 ## Run
 
+Scan a repository and print a summary to the console:
+
 ```sh
 dotnet run --project src/CodeSentinel.Cli -- <repository-path>
 ```
 
-Exit codes:
+Write a structured report to disk:
 
-| Code | Meaning                              |
-| ---- | ------------------------------------ |
-| 0    | Scan completed without findings.     |
-| 1    | Scan completed with findings.        |
-| 2    | Scan failed (invalid path, I/O, etc.) |
+```sh
+dotnet run --project src/CodeSentinel.Cli -- <repository-path> --output report.json
+dotnet run --project src/CodeSentinel.Cli -- <repository-path> -f html -o report.html
+```
+
+### Options
+
+| Flag                | Description                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--format`, `-f`    | Report format: `json` or `html`. If omitted, inferred from `--output` extension; otherwise `json`.   |
+| `--output`, `-o`    | Path where the report will be written. If omitted, no file is created.                               |
+
+### Exit codes
+
+| Code | Meaning                                |
+| ---- | -------------------------------------- |
+| 0    | Scan completed without findings.       |
+| 1    | Scan completed with findings.          |
+| 2    | Scan failed (invalid path, I/O, etc.). |
 
 ## Roadmap
 
 - Phase 1 — Architecture and planning. **Done.**
 - Phase 2 — Solution scaffolding, dependency wiring, smoke tests. **Done.**
-- Phase 3 — Core detection engine: built-in secret rules, entropy heuristics,
-  insecure-pattern rules, ignore policy, file walker.
-- Phase 4 — Reporting: JSON and HTML report writers, scoring model.
-- Phase 5 — CLI surface: filters, severity thresholds, output format flags,
-  rule listing.
+- Phase 3 — Core detection engine: built-in rules, entropy heuristic, file walker. **Done.**
+- Phase 4 — Reporting: JSON and HTML report writers, CLI integration. **Done.**
+- Phase 5 — CLI surface: severity thresholds, filters, rule listing, ignore-file support.
 - Phase 6 — Optional: Docker image, CI/CD example, remote repository scanning,
   SARIF output.
 

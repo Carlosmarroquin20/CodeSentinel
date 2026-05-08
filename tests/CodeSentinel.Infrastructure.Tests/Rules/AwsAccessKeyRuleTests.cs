@@ -6,14 +6,19 @@ namespace CodeSentinel.Infrastructure.Tests.Rules;
 
 public class AwsAccessKeyRuleTests
 {
+    // Concatenated at runtime so the full pattern does not appear as a literal string,
+    // which would trigger secret scanners on repositories that host this scanner's own tests.
+    private const string FakeLongTermKeyId  = "AKIA" + "IOSFODNN7EXAMPLE";
+    private const string FakeTemporaryKeyId = "ASIA" + "IOSFODNN7EXAMPLE";
+
     private readonly AwsAccessKeyRule _rule = new();
 
     [Theory]
-    [InlineData("AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE")]
-    [InlineData("key = ASIAIOSFODNN7EXAMPLE")]  // ASIA prefix, exactly 16 trailing chars = valid format
-    public async Task AnalyzeAsync_WithValidKey_ReturnsOneFinding(string line)
+    [InlineData("AWS_ACCESS_KEY_ID=", FakeLongTermKeyId)]
+    [InlineData("key = ",             FakeTemporaryKeyId)]
+    public async Task AnalyzeAsync_WithValidKey_ReturnsOneFinding(string prefix, string key)
     {
-        var file = MakeFile(line);
+        var file = MakeFile(prefix + key);
 
         var findings = await _rule.AnalyzeAsync(file, CancellationToken.None);
 
@@ -25,12 +30,12 @@ public class AwsAccessKeyRuleTests
     [Fact]
     public async Task AnalyzeAsync_SnippetDoesNotExposeRawKey()
     {
-        var file = MakeFile("AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE");
+        var file = MakeFile("AWS_ACCESS_KEY_ID=" + FakeLongTermKeyId);
 
         var findings = await _rule.AnalyzeAsync(file, CancellationToken.None);
 
         findings[0].Location.Snippet.Should().Contain("[REDACTED]");
-        findings[0].Location.Snippet.Should().NotContain("AKIAIOSFODNN7EXAMPLE");
+        findings[0].Location.Snippet.Should().NotContain(FakeLongTermKeyId);
     }
 
     [Theory]

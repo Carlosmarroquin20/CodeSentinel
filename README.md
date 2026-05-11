@@ -74,6 +74,8 @@ codesentinel list-rules
 | `--output`, `-o`  | Path where the report will be written. If omitted, no file is created.                               |
 | `--fail-on`       | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
 | `--exclude`, `-e` | Glob pattern to exclude from the scan. Repeatable. Combined with patterns from `.codesentinelignore` if present in the scan root. |
+| `--verbose`, `-v` | Show debug-level log output, including per-file scan progress.                                       |
+| `--quiet`, `-q`   | Suppress informational log output; warnings and errors are still shown. Ideal for CI/CD pipelines.   |
 
 ### Excluding paths
 
@@ -270,8 +272,8 @@ samples/     Deliberately-vulnerable fixtures used by tests and demos.
 - Phase 2 — Solution scaffolding, dependency wiring, smoke tests. **Done.**
 - Phase 3 — Core detection engine: built-in rules, entropy heuristic, file walker. **Done.**
 - Phase 4 — Reporting: JSON and HTML report writers, CLI integration. **Done.**
-- Phase 5 — CLI surface refinements: severity thresholds, filters, rule listing,
-  `.codesentinelignore` support.
+- Phase 5 — CLI surface refinements: `--fail-on` threshold, `--exclude` + `.codesentinelignore`,
+  `list-rules` subcommand, `--verbose` / `--quiet` log levels. **Done.**
 - Phase 6 — Optional: Docker image, CI/CD example, remote repository scanning,
   SARIF output (GitHub code scanning integration).
 

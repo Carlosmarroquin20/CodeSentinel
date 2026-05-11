@@ -41,6 +41,7 @@ internal sealed class ScanOrchestrator : IScanOrchestrator
         await foreach (var file in _fileSource.GetFilesAsync(request, cancellationToken).ConfigureAwait(false))
         {
             filesScanned++;
+            _logger.LogDebug("Scanning {RelativePath}", file.RelativePath);
             foreach (var rule in rules)
             {
                 var ruleFindings = await rule.AnalyzeAsync(file, cancellationToken).ConfigureAwait(false);

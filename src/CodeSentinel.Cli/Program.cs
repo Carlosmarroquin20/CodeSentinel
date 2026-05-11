@@ -4,7 +4,8 @@ internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        await using var provider = Bootstrap.BuildServiceProvider();
+        var level = Bootstrap.ResolveLogLevel(args);
+        await using var provider = Bootstrap.BuildServiceProvider(level);
         return await CliApplication.RunAsync(args, provider).ConfigureAwait(false);
     }
 }

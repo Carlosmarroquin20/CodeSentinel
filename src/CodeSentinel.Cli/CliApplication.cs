@@ -47,6 +47,14 @@ internal static class CliApplication
             AllowMultipleArgumentsPerToken = true,
         };
 
+        var verboseOption = new Option<bool>(
+            aliases: ["--verbose", "-v"],
+            description: "Show debug-level log output, including per-file scan progress.");
+
+        var quietOption = new Option<bool>(
+            aliases: ["--quiet", "-q"],
+            description: "Suppress informational log output. Warnings and errors are still shown.");
+
         var rootCommand = new RootCommand("CodeSentinel - security scanner for source repositories.")
         {
             pathArgument,
@@ -55,6 +63,12 @@ internal static class CliApplication
             failOnOption,
             excludeOption,
         };
+
+        // --verbose and --quiet are applied at Bootstrap time (before the parser runs).
+        // They are registered here as global options so they appear in --help and are
+        // accepted on every subcommand without being treated as unknown arguments.
+        rootCommand.AddGlobalOption(verboseOption);
+        rootCommand.AddGlobalOption(quietOption);
 
         var exitCode = ExitSuccess;
         rootCommand.SetHandler(

@@ -62,6 +62,7 @@ codesentinel <path> [--format <fmt>] [--output <file>]
 | `<path>`         | Repository root to scan (required).                                                                  |
 | `--format`, `-f` | Report format: `json` or `html`. If omitted, inferred from `--output` extension; otherwise `json`.   |
 | `--output`, `-o` | Path where the report will be written. If omitted, no file is created.                               |
+| `--fail-on`      | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
 
 ### Exit codes
 
@@ -77,7 +78,7 @@ CodeSentinel returns deterministic exit codes designed for CI/CD pipelines:
 
 ```yaml
 - name: Run CodeSentinel
-  run: dotnet run --project src/CodeSentinel.Cli -- . -o codesentinel.json
+  run: dotnet run --project src/CodeSentinel.Cli -- . --fail-on High -o codesentinel.json
 
 - name: Upload report
   if: always()
@@ -87,8 +88,9 @@ CodeSentinel returns deterministic exit codes designed for CI/CD pipelines:
     path: codesentinel.json
 ```
 
-A non-zero exit code on findings fails the job, so secrets pushed to a pull
-request fail the check before review.
+`--fail-on High` blocks the merge only on High or Critical findings while still
+surfacing Medium/Low/Info issues in the report — a common DevSecOps pattern that
+keeps signal high without ignoring lower-severity warnings.
 
 ## Security score
 

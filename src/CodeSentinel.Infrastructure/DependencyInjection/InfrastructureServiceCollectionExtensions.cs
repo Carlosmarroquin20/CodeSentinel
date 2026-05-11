@@ -13,7 +13,9 @@ public static class InfrastructureServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IIgnorePolicy, NullIgnorePolicy>();
+        // IIgnorePolicy is no longer registered here: LocalFileSource builds it per-scan
+        // from ScanRequest.IgnoreGlobs so --exclude and .codesentinelignore patterns
+        // flow through the request rather than through DI.
         services.AddSingleton<IFileSource, LocalFileSource>();
         services.AddSingleton<IRuleProvider, BuiltInRuleProvider>();
         services.AddSingleton<IReportWriter, JsonReportWriter>();

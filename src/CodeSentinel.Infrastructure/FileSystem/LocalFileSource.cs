@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Core.Detection;
 using CodeSentinel.Core.Scanning;
+using CodeSentinel.Infrastructure.Rules;
 using Microsoft.Extensions.Logging;
 
 namespace CodeSentinel.Infrastructure.FileSystem;
@@ -27,12 +28,10 @@ internal sealed class LocalFileSource : IFileSource
         ".nupkg", ".snupkg", ".bin", ".dat", ".pyc"
     };
 
-    private readonly IIgnorePolicy _ignorePolicy;
     private readonly ILogger<LocalFileSource> _logger;
 
-    public LocalFileSource(IIgnorePolicy ignorePolicy, ILogger<LocalFileSource> logger)
+    public LocalFileSource(ILogger<LocalFileSource> logger)
     {
-        _ignorePolicy = ignorePolicy;
         _logger = logger;
     }
 
@@ -40,6 +39,10 @@ internal sealed class LocalFileSource : IFileSource
         ScanRequest request,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        // Ignore policy is built per-scan from the request's globs so that --exclude
+        // and .codesentinelignore patterns can vary between invocations.
+        var ignorePolicy = new GlobIgnorePolicy(request.IgnoreGlobs);
+
         var root = new DirectoryInfo(request.RootPath);
         if (!root.Exists)
         {
@@ -57,7 +60,7 @@ internal sealed class LocalFileSource : IFileSource
 
             var relativePath = Path.GetRelativePath(request.RootPath, file.FullName);
 
-            if (_ignorePolicy.ShouldIgnore(relativePath))
+            if (ignorePolicy.ShouldIgnore(relativePath))
                 continue;
 
             ScannableFile? scannableFile = null;

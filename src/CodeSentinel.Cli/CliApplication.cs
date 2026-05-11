@@ -70,8 +70,52 @@ internal static class CliApplication
                     path, format, output, failOn, excludes, services, cancellationToken).ConfigureAwait(false);
             });
 
+        var listRulesCommand = new Command("list-rules", "List all detection rules registered in the scanner.");
+        listRulesCommand.SetHandler(context =>
+        {
+            exitCode = ExecuteListRules(services, Console.Out);
+            return Task.CompletedTask;
+        });
+        rootCommand.AddCommand(listRulesCommand);
+
         var parseExit = await rootCommand.InvokeAsync(args).ConfigureAwait(false);
         return parseExit != 0 ? parseExit : exitCode;
+    }
+
+    private static int ExecuteListRules(IServiceProvider services, TextWriter output)
+    {
+        var ruleProvider = services.GetRequiredService<IRuleProvider>();
+        var rules = ruleProvider.GetRules()
+            .Select(r => r.Metadata)
+            .OrderBy(m => m.Id, StringComparer.Ordinal)
+            .ToList();
+
+        if (rules.Count == 0)
+        {
+            output.WriteLine("No rules registered.");
+            return ExitSuccess;
+        }
+
+        // Width each column to fit its longest value so the table stays aligned across runs.
+        var idWidth       = Math.Max("ID".Length,       rules.Max(r => r.Id.Length));
+        var severityWidth = Math.Max("SEVERITY".Length, rules.Max(r => r.DefaultSeverity.ToString().Length));
+        var categoryWidth = Math.Max("CATEGORY".Length, rules.Max(r => r.Category.ToString().Length));
+
+        const int ColumnGap = 2;
+        var gap = new string(' ', ColumnGap);
+
+        output.WriteLine($"{"ID".PadRight(idWidth)}{gap}{"SEVERITY".PadRight(severityWidth)}{gap}{"CATEGORY".PadRight(categoryWidth)}{gap}TITLE");
+
+        foreach (var rule in rules)
+        {
+            output.WriteLine(
+                $"{rule.Id.PadRight(idWidth)}{gap}" +
+                $"{rule.DefaultSeverity.ToString().PadRight(severityWidth)}{gap}" +
+                $"{rule.Category.ToString().PadRight(categoryWidth)}{gap}" +
+                $"{rule.Title}");
+        }
+
+        return ExitSuccess;
     }
 
     private static async Task<int> ExecuteScanAsync(

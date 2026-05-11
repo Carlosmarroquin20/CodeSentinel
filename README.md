@@ -54,15 +54,52 @@ dotnet run --project src/CodeSentinel.Cli -- samples/vulnerable-repo -o report.h
 ## CLI reference
 
 ```
-codesentinel <path> [--format <fmt>] [--output <file>]
+codesentinel <path> [--format <fmt>] [--output <file>] [--fail-on <severity>] [--exclude <glob>]
+codesentinel list-rules
 ```
 
-| Flag             | Description                                                                                          |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `<path>`         | Repository root to scan (required).                                                                  |
-| `--format`, `-f` | Report format: `json` or `html`. If omitted, inferred from `--output` extension; otherwise `json`.   |
-| `--output`, `-o` | Path where the report will be written. If omitted, no file is created.                               |
-| `--fail-on`      | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
+### Subcommands
+
+| Command       | Purpose                                                                |
+| ------------- | ---------------------------------------------------------------------- |
+| (no command)  | Scan the given repository path. This is the default behavior.          |
+| `list-rules`  | Print a table of every detection rule currently registered.            |
+
+### Scan options
+
+| Flag              | Description                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `<path>`          | Repository root to scan (required).                                                                  |
+| `--format`, `-f`  | Report format: `json` or `html`. If omitted, inferred from `--output` extension; otherwise `json`.   |
+| `--output`, `-o`  | Path where the report will be written. If omitted, no file is created.                               |
+| `--fail-on`       | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
+| `--exclude`, `-e` | Glob pattern to exclude from the scan. Repeatable. Combined with patterns from `.codesentinelignore` if present in the scan root. |
+
+### Excluding paths
+
+Two complementary mechanisms control which paths are scanned:
+
+**`--exclude` (CLI flag, repeatable).** Best for ad-hoc exclusions during a single
+invocation:
+
+```sh
+codesentinel . --exclude "third_party/**" --exclude "**/*.min.js"
+```
+
+**`.codesentinelignore` (file in the scan root).** Best for project-level
+exclusions that should apply to every run:
+
+```
+# CodeSentinel ignore patterns — one glob per line, # for comments.
+third_party/**
+docs/**
+**/*.generated.cs
+```
+
+Patterns from both sources are combined. Note that CodeSentinel also skips a
+default set of directories (`.git`, `node_modules`, `bin`, `obj`, `dist`,
+`build`, `vendor`, `__pycache__`, `target`, `.terraform`, and similar) without
+requiring explicit configuration.
 
 ### Exit codes
 
@@ -91,6 +128,27 @@ CodeSentinel returns deterministic exit codes designed for CI/CD pipelines:
 `--fail-on High` blocks the merge only on High or Critical findings while still
 surfacing Medium/Low/Info issues in the report — a common DevSecOps pattern that
 keeps signal high without ignoring lower-severity warnings.
+
+## Listing rules
+
+To see which rules are bundled with the binary, run:
+
+```sh
+codesentinel list-rules
+```
+
+Output:
+
+```
+ID     SEVERITY  CATEGORY         TITLE
+CS001  Critical  Secret           AWS Access Key ID
+CS002  Critical  Secret           AWS Secret Access Key
+CS003  Critical  Secret           Private Key
+CS004  High      Secret           JSON Web Token
+CS005  High      Secret           Hardcoded Credential
+CS101  Medium    InsecurePattern  Weak Hash Algorithm
+CS900  Medium    Secret           High-Entropy String
+```
 
 ## Security score
 

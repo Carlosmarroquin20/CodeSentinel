@@ -235,6 +235,7 @@ internal static class CliApplication
         {
             ".json" => "json",
             ".html" or ".htm" => "html",
+            ".sarif" => "sarif",
             _ => null,
         };
 

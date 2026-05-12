@@ -48,3 +48,5 @@ appsettings.Local.json
 report-demo.*
 *.report.json
 *.report.html
+*.report.sarif
+codesentinel.sarif

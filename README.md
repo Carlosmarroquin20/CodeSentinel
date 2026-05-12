@@ -70,7 +70,7 @@ codesentinel list-rules
 | Flag              | Description                                                                                          |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
 | `<path>`          | Repository root to scan (required).                                                                  |
-| `--format`, `-f`  | Report format: `json` or `html`. If omitted, inferred from `--output` extension; otherwise `json`.   |
+| `--format`, `-f`  | Report format: `json`, `html`, or `sarif`. If omitted, inferred from `--output` extension; otherwise `json`. |
 | `--output`, `-o`  | Path where the report will be written. If omitted, no file is created.                               |
 | `--fail-on`       | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
 | `--exclude`, `-e` | Glob pattern to exclude from the scan. Repeatable. Combined with patterns from `.codesentinelignore` if present in the scan root. |
@@ -115,21 +115,25 @@ CodeSentinel returns deterministic exit codes designed for CI/CD pipelines:
 
 ### Example: GitHub Actions
 
-```yaml
-- name: Run CodeSentinel
-  run: dotnet run --project src/CodeSentinel.Cli -- . --fail-on High -o codesentinel.json
+Upload the report as a build artifact and push SARIF findings into the
+repository's Security tab:
 
-- name: Upload report
+```yaml
+- name: Run CodeSentinel (SARIF)
+  run: dotnet run --project src/CodeSentinel.Cli -- . --fail-on High -o codesentinel.sarif
+
+- name: Upload SARIF to GitHub code scanning
   if: always()
-  uses: actions/upload-artifact@v4
+  uses: github/codeql-action/upload-sarif@v3
   with:
-    name: security-report
-    path: codesentinel.json
+    sarif_file: codesentinel.sarif
 ```
 
 `--fail-on High` blocks the merge only on High or Critical findings while still
 surfacing Medium/Low/Info issues in the report — a common DevSecOps pattern that
-keeps signal high without ignoring lower-severity warnings.
+keeps signal high without ignoring lower-severity warnings. Uploading SARIF
+makes each finding visible inline on the affected file in the GitHub Security
+tab, with the rule description shown next to the source line.
 
 ## Listing rules
 

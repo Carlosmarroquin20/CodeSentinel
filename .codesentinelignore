@@ -1,0 +1,9 @@
+# CodeSentinel scanning its own repository — exclusions go here.
+# One glob per line. Lines starting with # are comments.
+
+# Deliberately-vulnerable fixtures used by tests and demos.
+samples/**
+
+# Test fixtures intentionally contain rule-matching patterns (AWS-shaped strings,
+# MD5 usage, PEM headers) so the rules can be exercised. They are not real secrets.
+tests/**

@@ -1,0 +1,56 @@
+name: security
+
+# Run CodeSentinel against its own source code (dogfooding) and publish results
+# to GitHub's code scanning dashboard via SARIF.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly re-scan picks up newly-detectable patterns when the ruleset evolves.
+    - cron: '0 3 * * 1'
+
+jobs:
+  self-scan:
+    name: self-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required by github/codeql-action/upload-sarif.
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run CodeSentinel against this repository
+        # --fail-on High blocks the merge only on High/Critical findings while
+        # surfacing Medium/Low/Info issues in the report.
+        run: >
+          dotnet run --project src/CodeSentinel.Cli --configuration Release --
+          .
+          --fail-on High
+          --output codesentinel.sarif
+
+      - name: Upload SARIF to GitHub code scanning
+        # Run even if the previous step failed so findings are still visible.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: codesentinel.sarif
+          category: codesentinel
+
+      - name: Upload SARIF as a build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codesentinel-sarif
+          path: codesentinel.sarif
+          retention-days: 14

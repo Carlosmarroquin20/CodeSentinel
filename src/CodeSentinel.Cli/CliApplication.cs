@@ -1,4 +1,6 @@
 using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Parsing;
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Core.Findings;
 using CodeSentinel.Core.Reporting;
@@ -22,9 +24,10 @@ internal static class CliApplication
         IServiceProvider services,
         CancellationToken cancellationToken = default)
     {
-        var pathArgument = new Argument<DirectoryInfo>(
-            name: "path",
-            description: "Repository root to scan.");
+        var targetArgument = new Argument<string>(
+            name: "target",
+            description: "Local repository path or Git remote URL "
+                       + "(https://..., git@..., ssh://..., or git://...).");
 
         var formatOption = new Option<string?>(
             aliases: ["--format", "-f"],
@@ -57,7 +60,7 @@ internal static class CliApplication
 
         var rootCommand = new RootCommand("CodeSentinel - security scanner for source repositories.")
         {
-            pathArgument,
+            targetArgument,
             formatOption,
             outputOption,
             failOnOption,
@@ -74,14 +77,14 @@ internal static class CliApplication
         rootCommand.SetHandler(
             async (context) =>
             {
-                var path = context.ParseResult.GetValueForArgument(pathArgument);
+                var target = context.ParseResult.GetValueForArgument(targetArgument);
                 var format = context.ParseResult.GetValueForOption(formatOption);
                 var output = context.ParseResult.GetValueForOption(outputOption);
                 var failOn = context.ParseResult.GetValueForOption(failOnOption);
                 var excludes = context.ParseResult.GetValueForOption(excludeOption) ?? [];
 
-                exitCode = await ExecuteScanAsync(
-                    path, format, output, failOn, excludes, services, cancellationToken).ConfigureAwait(false);
+                exitCode = await RunScanAsync(
+                    target, format, output, failOn, excludes, services, cancellationToken).ConfigureAwait(false);
             });
 
         var listRulesCommand = new Command("list-rules", "List all detection rules registered in the scanner.");
@@ -92,7 +95,14 @@ internal static class CliApplication
         });
         rootCommand.AddCommand(listRulesCommand);
 
-        var parseExit = await rootCommand.InvokeAsync(args).ConfigureAwait(false);
+        // UseDefaults enables --version, --help, parse-error reporting, exception
+        // handling, and Ctrl+C cancellation in one call. --version short-circuits
+        // before the handler so users can run `codesentinel --version` without a target.
+        var parser = new CommandLineBuilder(rootCommand)
+            .UseDefaults()
+            .Build();
+
+        var parseExit = await parser.InvokeAsync(args).ConfigureAwait(false);
         return parseExit != 0 ? parseExit : exitCode;
     }
 
@@ -132,8 +142,11 @@ internal static class CliApplication
         return ExitSuccess;
     }
 
-    private static async Task<int> ExecuteScanAsync(
-        DirectoryInfo path,
+    // Top-level dispatch: clone first if the target is a Git URL, otherwise scan the
+    // local path directly. The cloned working copy is disposed after the scan so the
+    // temp directory does not linger.
+    private static async Task<int> RunScanAsync(
+        string target,
         string? format,
         FileInfo? output,
         Severity? failOn,
@@ -143,6 +156,47 @@ internal static class CliApplication
     {
         var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("codesentinel");
 
+        if (LooksLikeGitUrl(target))
+        {
+            IClonedRepository cloned;
+            try
+            {
+                var cloner = services.GetRequiredService<IRepositoryCloner>();
+                cloned = await cloner.CloneAsync(target, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to clone {Url}", target);
+                return ExitScanError;
+            }
+
+            await using (cloned.ConfigureAwait(false))
+            {
+                return await ExecuteScanAsync(
+                    new DirectoryInfo(cloned.LocalPath),
+                    displayTarget: target,
+                    format, output, failOn, cliExcludes, services, logger, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        var path = new DirectoryInfo(target);
+        return await ExecuteScanAsync(
+            path,
+            displayTarget: path.FullName,
+            format, output, failOn, cliExcludes, services, logger, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<int> ExecuteScanAsync(
+        DirectoryInfo path,
+        string displayTarget,
+        string? format,
+        FileInfo? output,
+        Severity? failOn,
+        IReadOnlyList<string> cliExcludes,
+        IServiceProvider services,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
         if (!path.Exists)
         {
             logger.LogError("Path does not exist: {Path}", path.FullName);
@@ -163,7 +217,7 @@ internal static class CliApplication
 
         if (output is not null)
         {
-            var reportExit = await TryWriteReportAsync(result, path, format, output, services, logger, cancellationToken)
+            var reportExit = await TryWriteReportAsync(result, displayTarget, format, output, services, logger, cancellationToken)
                 .ConfigureAwait(false);
             if (reportExit != ExitSuccess)
                 return reportExit;
@@ -171,6 +225,13 @@ internal static class CliApplication
 
         return ComputeFindingsExitCode(result.Findings, failOn, logger);
     }
+
+    internal static bool LooksLikeGitUrl(string target) =>
+        target.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+        target.StartsWith("http://",  StringComparison.OrdinalIgnoreCase) ||
+        target.StartsWith("git://",   StringComparison.OrdinalIgnoreCase) ||
+        target.StartsWith("ssh://",   StringComparison.OrdinalIgnoreCase) ||
+        target.StartsWith("git@",     StringComparison.OrdinalIgnoreCase);
 
     private static int ComputeFindingsExitCode(IReadOnlyList<Finding> findings, Severity? threshold, ILogger logger)
     {
@@ -196,7 +257,7 @@ internal static class CliApplication
 
     private static async Task<int> TryWriteReportAsync(
         ScanResult result,
-        DirectoryInfo target,
+        string displayTarget,
         string? requestedFormat,
         FileInfo output,
         IServiceProvider services,
@@ -206,7 +267,7 @@ internal static class CliApplication
         var resolvedFormat = requestedFormat ?? InferFormatFromExtension(output) ?? DefaultFormat;
         var reportService = services.GetRequiredService<IReportService>();
         var report = new ScanReport(
-            TargetPath: target.FullName,
+            TargetPath: displayTarget,
             ScannedAt: DateTimeOffset.UtcNow,
             ScannerVersion: GetScannerVersion(),
             Result: result);

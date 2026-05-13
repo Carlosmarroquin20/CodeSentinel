@@ -9,6 +9,30 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <!-- dotnet global tool packaging metadata -->
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>codesentinel</ToolCommandName>
+    <PackageId>CodeSentinel.Cli</PackageId>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/nupkg</PackageOutputPath>
+    <PackageTags>security;scanner;secrets;sast;devsecops;sarif</PackageTags>
+    <PackageProjectUrl>https://github.com/Ema322/CodeSentinel</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Ema322/CodeSentinel</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageDescription>
+      CodeSentinel is a security scanner for source code repositories.
+      Detects exposed secrets, insecure coding patterns, and misconfigurations.
+      Produces JSON, HTML, or SARIF reports and integrates with CI/CD via exit codes.
+    </PackageDescription>
+  </PropertyGroup>
+
+  <!-- README is one level up from the project; pull it into the package root -->
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\CodeSentinel.Application\CodeSentinel.Application.csproj" />
     <ProjectReference Include="..\CodeSentinel.Infrastructure\CodeSentinel.Infrastructure.csproj" />

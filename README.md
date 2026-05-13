@@ -10,8 +10,9 @@ and report writers compose freely (JSON and HTML today, SARIF later).
 
 ## Status
 
-Early development. Scanning engine, scoring, and reporting are functional.
-**85 tests passing** across Core, Application, Infrastructure, and CLI layers.
+MVP complete. Scanning engine, scoring, JSON/HTML/SARIF reporting, CLI surface,
+Docker image, GitHub Actions integration, and remote-repository support are all
+in place. **177 tests passing** across Core, Application, Infrastructure, and CLI layers.
 
 ## What it detects
 
@@ -29,20 +30,45 @@ Findings include severity, confidence, a redacted snippet, and the file path
 and line number. Snippets in secret-category rules are redacted before they
 reach the report — actual credentials never appear in output.
 
-## Quick start
+## Install
+
+CodeSentinel ships as a .NET global tool. Pack the project and install from
+the local NuGet output:
 
 ```sh
-# Build
-dotnet build CodeSentinel.sln
+dotnet pack src/CodeSentinel.Cli -c Release
+dotnet tool install --global --add-source ./artifacts/nupkg CodeSentinel.Cli
+```
 
+After installation the `codesentinel` command is available on `PATH`:
+
+```sh
+codesentinel --version
+codesentinel list-rules
+codesentinel /path/to/repo
+```
+
+To uninstall: `dotnet tool uninstall --global CodeSentinel.Cli`.
+
+## Quick start
+
+Using the installed tool:
+
+```sh
 # Scan a repository (console output only)
-dotnet run --project src/CodeSentinel.Cli -- /path/to/repo
+codesentinel /path/to/repo
 
 # Generate an HTML report
-dotnet run --project src/CodeSentinel.Cli -- /path/to/repo -o report.html
+codesentinel /path/to/repo -o report.html
 
 # Generate a JSON report (for CI/CD)
-dotnet run --project src/CodeSentinel.Cli -- /path/to/repo -o report.json
+codesentinel /path/to/repo -o report.json
+```
+
+Or run directly from source without installing:
+
+```sh
+dotnet run --project src/CodeSentinel.Cli -- /path/to/repo
 ```
 
 Or scan the bundled fixture to see what a vulnerable repository looks like:
@@ -51,12 +77,29 @@ Or scan the bundled fixture to see what a vulnerable repository looks like:
 dotnet run --project src/CodeSentinel.Cli -- samples/vulnerable-repo -o report.html
 ```
 
+### Scanning a remote repository
+
+Pass a Git URL instead of a local path and CodeSentinel will clone the
+repository into a temporary directory, scan it, and clean up after itself:
+
+```sh
+codesentinel https://github.com/octocat/Hello-World.git -o report.sarif
+codesentinel git@github.com:owner/repo.git --fail-on High
+```
+
+Supported URL prefixes: `https://`, `http://`, `git://`, `ssh://`, `git@`.
+For private repositories, ensure credentials are available to the local Git
+configuration (SSH agent, credential helper, etc.).
+
 ## CLI reference
 
 ```
-codesentinel <path> [--format <fmt>] [--output <file>] [--fail-on <severity>] [--exclude <glob>]
+codesentinel <target> [--format <fmt>] [--output <file>] [--fail-on <severity>] [--exclude <glob>]
 codesentinel list-rules
 ```
+
+`<target>` is either a local directory or a Git remote URL — see
+[Scanning a remote repository](#scanning-a-remote-repository) below.
 
 ### Subcommands
 
@@ -69,7 +112,7 @@ codesentinel list-rules
 
 | Flag              | Description                                                                                          |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `<path>`          | Repository root to scan (required).                                                                  |
+| `<target>`        | Repository to scan (required). Local directory path **or** Git remote URL (https/ssh/git protocols).  |
 | `--format`, `-f`  | Report format: `json`, `html`, or `sarif`. If omitted, inferred from `--output` extension; otherwise `json`. |
 | `--output`, `-o`  | Path where the report will be written. If omitted, no file is created.                               |
 | `--fail-on`       | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
@@ -134,6 +177,26 @@ surfacing Medium/Low/Info issues in the report — a common DevSecOps pattern th
 keeps signal high without ignoring lower-severity warnings. Uploading SARIF
 makes each finding visible inline on the affected file in the GitHub Security
 tab, with the rule description shown next to the source line.
+
+## Docker
+
+CodeSentinel ships a `Dockerfile` that builds a self-contained Linux binary on
+top of a chiseled (distroless) .NET runtime base — no shell, no package
+manager, single non-root user.
+
+```sh
+# Build the image
+docker build -t codesentinel .
+
+# Scan a repository by bind-mounting it at /scan
+docker run --rm -v "$(pwd):/scan" codesentinel /scan
+
+# Write a SARIF report to the mounted volume
+docker run --rm -v "$(pwd):/scan" codesentinel /scan -o /scan/report.sarif --fail-on High
+```
+
+The image runs as a non-root user. The mounted volume must allow that user to
+read source files and (if `--output` is used) write into the chosen directory.
 
 ## Listing rules
 
@@ -248,6 +311,17 @@ dotnet build CodeSentinel.sln
 dotnet test  CodeSentinel.sln
 ```
 
+The repository ships two GitHub Actions workflows in `.github/workflows/`:
+
+| Workflow      | What it does                                                                    |
+| ------------- | ------------------------------------------------------------------------------- |
+| `build.yml`   | Restores, builds, and runs the full test suite on Linux, Windows, and macOS.   |
+| `security.yml`| Runs CodeSentinel against its own source and uploads SARIF to the Security tab. |
+
+The security workflow uses a `.codesentinelignore` in the repo root that
+excludes `samples/**` (deliberately-vulnerable fixtures) and `tests/**` (test
+data that intentionally contains rule-matching patterns).
+
 Test layout:
 
 | Project                              | Coverage                                                |
@@ -278,9 +352,8 @@ samples/     Deliberately-vulnerable fixtures used by tests and demos.
 - Phase 4 — Reporting: JSON and HTML report writers, CLI integration. **Done.**
 - Phase 5 — CLI surface refinements: `--fail-on` threshold, `--exclude` + `.codesentinelignore`,
   `list-rules` subcommand, `--verbose` / `--quiet` log levels. **Done.**
-- Phase 6 — Optional: Docker image, CI/CD example, remote repository scanning,
-  SARIF output (GitHub code scanning integration).
+- Phase 6 — SARIF writer, Dockerfile, GitHub Actions CI/CD, remote Git scanning. **Done.**
 
 ## License
 
-To be determined.
+[MIT](LICENSE) — see the `LICENSE` file for the full text.

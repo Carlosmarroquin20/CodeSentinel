@@ -1,0 +1,35 @@
+# Minimize Docker build context: everything not needed to compile the CLI is excluded.
+
+# Build artifacts
+**/bin/
+**/obj/
+
+# IDE / editor
+**/.vs/
+**/.idea/
+**/.vscode/
+**/*.user
+**/*.suo
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Test projects are not part of the published binary
+tests/
+
+# Local samples and generated reports
+samples/
+*.sarif
+*.report.*
+report-demo.*
+
+# Docs do not belong inside the image
+*.md
+docs/
+
+# Local config
+appsettings.Development.json
+appsettings.Local.json
+*.env

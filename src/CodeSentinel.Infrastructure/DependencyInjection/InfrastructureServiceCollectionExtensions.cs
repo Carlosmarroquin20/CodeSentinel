@@ -1,5 +1,6 @@
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Infrastructure.FileSystem;
+using CodeSentinel.Infrastructure.Git;
 using CodeSentinel.Infrastructure.Reporting.Html;
 using CodeSentinel.Infrastructure.Reporting.Json;
 using CodeSentinel.Infrastructure.Reporting.Sarif;
@@ -22,6 +23,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IReportWriter, JsonReportWriter>();
         services.AddSingleton<IReportWriter, HtmlReportWriter>();
         services.AddSingleton<IReportWriter, SarifReportWriter>();
+        services.AddSingleton<IRepositoryCloner, GitRepositoryCloner>();
 
         return services;
     }

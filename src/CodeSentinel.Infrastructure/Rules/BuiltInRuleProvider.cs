@@ -18,6 +18,11 @@ internal sealed class BuiltInRuleProvider : IRuleProvider
             new PrivateKeyRule(),
             new JwtTokenRule(),
             new HardcodedCredentialRule(),
+            new GitHubTokenRule(),
+            new SlackTokenRule(),
+            new StripeApiKeyRule(),
+            new GoogleApiKeyRule(),
+            new NpmTokenRule(),
             new WeakHashAlgorithmRule(),
             // Heuristic rules run last; pattern rules are higher-signal and cheaper.
             new ShannonEntropyRule(),

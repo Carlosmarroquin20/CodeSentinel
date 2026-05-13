@@ -11,8 +11,9 @@ and report writers compose freely (JSON and HTML today, SARIF later).
 ## Status
 
 MVP complete. Scanning engine, scoring, JSON/HTML/SARIF reporting, CLI surface,
-Docker image, GitHub Actions integration, and remote-repository support are all
-in place. **177 tests passing** across Core, Application, Infrastructure, and CLI layers.
+Docker image, GitHub Actions integration, remote-repository support, and
+distribution as a .NET global tool are all in place. **202 tests passing**
+across Core, Application, Infrastructure, and CLI layers.
 
 ## What it detects
 
@@ -23,6 +24,11 @@ in place. **177 tests passing** across Core, Application, Infrastructure, and CL
 | `CS003` | Secret           | Critical   | PEM private key headers (RSA, EC, OpenSSH, DSA, PGP)             |
 | `CS004` | Secret           | High       | JSON Web Tokens                                                  |
 | `CS005` | Secret           | High       | Hardcoded passwords, API keys, secrets, and tokens               |
+| `CS006` | Secret           | Critical   | GitHub tokens (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`) |
+| `CS007` | Secret           | Critical   | Slack tokens (`xoxb-`, `xoxp-`, `xapp-`, …)                      |
+| `CS008` | Secret           | Critical   | Stripe secret and restricted API keys (`sk_…`, `rk_…`)           |
+| `CS009` | Secret           | High       | Google API keys (`AIza…`)                                        |
+| `CS010` | Secret           | High       | npm registry access tokens (`npm_…`)                             |
 | `CS101` | Insecure Pattern | Medium     | MD5 / SHA-1 usage (.NET, Python, Java)                           |
 | `CS900` | Heuristic        | Medium     | High-entropy strings (Shannon entropy ≥ 4.5)                     |
 

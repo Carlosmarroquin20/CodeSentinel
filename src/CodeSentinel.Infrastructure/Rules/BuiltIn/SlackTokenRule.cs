@@ -6,10 +6,12 @@ namespace CodeSentinel.Infrastructure.Rules.BuiltIn;
 
 internal sealed class SlackTokenRule : RegexDetectionRule
 {
-    // Bot (xoxb), user (xoxp), legacy (xoxa, xoxs), and app-level (xapp) tokens.
-    // All share the xox[bpoas]- or xapp- prefix followed by dash-separated alphanumeric segments.
+    // Bot (xoxb), user (xoxp), legacy (xoxa, xoxs, xoxr, xoxo), and app-level (xapp) tokens.
+    // Format varies in number of dash-separated segments (xoxb has 3, xoxp has 4, xapp has 4
+    // including a leading version marker), so the pattern matches an alphanumeric-and-dash body
+    // of at least 24 characters after the prefix. The distinctive prefix keeps false positives low.
     private static readonly Regex Pattern = new(
-        @"\b(?:xox[bpoas]|xapp)-[0-9A-Za-z]{10,}-[0-9A-Za-z-]{10,}\b",
+        @"\b(?:xox[bpoasr]|xapp)-[0-9A-Za-z][0-9A-Za-z-]{22,}\b",
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         matchTimeout: TimeSpan.FromSeconds(1));
 

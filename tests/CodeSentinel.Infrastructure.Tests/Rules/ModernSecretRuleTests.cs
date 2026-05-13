@@ -13,9 +13,9 @@ public class ModernSecretRuleTests
     // 36-character alphanumeric body shared by GitHub classic tokens and npm tokens.
     private const string Body36 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij";
 
-    // 82-character body for GitHub fine-grained PATs.
+    // 82-character body for GitHub fine-grained PATs (22 + 1 underscore + 59).
     private const string Body82 =
-        "ABCDEFGHIJKLMNOPQRSTUV_WXYZabcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrst";
+        "ABCDEFGHIJKLMNOPQRSTUV_WXYZabcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrs";
 
     private const string FakeGhpToken      = "ghp" + "_" + Body36;
     private const string FakeGhsToken      = "ghs" + "_" + Body36;
@@ -25,7 +25,7 @@ public class ModernSecretRuleTests
     private const string FakeStripeLiveKey = "sk" + "_live_" + "abcdefghijklmnopqrstuvwx";
     private const string FakeStripeTestKey = "sk" + "_test_" + "ABCDEFGHIJKLMNOPQRSTUVWX";
     private const string FakeStripeRestrictedKey = "rk" + "_live_" + "abcdefghijklmnopqrstuvwx";
-    private const string FakeGoogleKey     = "AIza" + "0123456789abcdefghijklmnopqrstuvwxyz";
+    private const string FakeGoogleKey     = "AIza" + "0123456789abcdefghijklmnopqrstuvwxy";
     private const string FakeNpmToken      = "npm" + "_" + Body36;
 
     // --- GitHub (CS006) ----------------------------------------------------

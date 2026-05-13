@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CodeSentinel.Application.Abstractions;
@@ -13,7 +14,10 @@ internal sealed class SarifReportWriter : IReportWriter
         "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json";
     private const string SarifVersion = "2.1.0";
     private const string ToolName = "CodeSentinel";
-    private const string ToolInformationUri = "https://github.com/Ema322/CodeSentinel";
+
+    // Resolved at startup from AssemblyMetadata injected by Directory.Build.props,
+    // so the project URL has a single source of truth in the MSBuild layer.
+    private static readonly string ToolInformationUri = ResolveProjectUrl();
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -103,4 +107,19 @@ internal sealed class SarifReportWriter : IReportWriter
 
     // SARIF artifact URIs must use forward slashes regardless of host platform.
     private static string NormalizeUri(string path) => path.Replace('\\', '/');
+
+    // Looks up the project URL injected as AssemblyMetadata from Directory.Build.props.
+    // Falls back to a constant if the attribute is missing for any reason (e.g., in an
+    // unusual build configuration).
+    private static string ResolveProjectUrl()
+    {
+        const string Fallback = "https://github.com/Ema322/CodeSentinel";
+
+        var value = typeof(SarifReportWriter).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => string.Equals(a.Key, "CodeSentinel.ProjectUrl", StringComparison.Ordinal))
+            ?.Value;
+
+        return string.IsNullOrWhiteSpace(value) ? Fallback : value;
+    }
 }

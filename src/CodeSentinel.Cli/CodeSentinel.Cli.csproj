@@ -16,8 +16,8 @@
     <PackageId>CodeSentinel.Cli</PackageId>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/nupkg</PackageOutputPath>
     <PackageTags>security;scanner;secrets;sast;devsecops;sarif</PackageTags>
-    <PackageProjectUrl>https://github.com/Ema322/CodeSentinel</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Ema322/CodeSentinel</RepositoryUrl>
+    <PackageProjectUrl>$(CodeSentinelProjectUrl)</PackageProjectUrl>
+    <RepositoryUrl>$(CodeSentinelProjectUrl)</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>

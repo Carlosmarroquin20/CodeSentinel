@@ -360,6 +360,11 @@ samples/     Deliberately-vulnerable fixtures used by tests and demos.
   `list-rules` subcommand, `--verbose` / `--quiet` log levels. **Done.**
 - Phase 6 — SARIF writer, Dockerfile, GitHub Actions CI/CD, remote Git scanning. **Done.**
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the version history. Releases follow
+[Semantic Versioning](https://semver.org/).
+
 ## License
 
 [MIT](LICENSE) — see the `LICENSE` file for the full text.

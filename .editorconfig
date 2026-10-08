@@ -26,6 +26,8 @@ dotnet_diagnostic.CA1014.severity = none
 dotnet_diagnostic.CA1515.severity = none
 # LoggerMessage source generators are a performance optimization we defer until a real workload exists.
 dotnet_diagnostic.CA1848.severity = none
+# Same trade-off: guarding trivial log arguments with IsEnabled checks adds noise without a measurable win.
+dotnet_diagnostic.CA1873.severity = none
 
 [tests/**.cs]
 # xUnit convention: Method_Scenario_Expected naming. Underscores are intentional in tests.

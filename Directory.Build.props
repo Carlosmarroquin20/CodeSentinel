@@ -7,7 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- Pinned (not 'latest') so a newer SDK on a dev box or CI runner cannot introduce
+         analyzer rules that break the build through TreatWarningsAsErrors. -->
+    <AnalysisLevel>9.0-recommended</AnalysisLevel>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <DebugType>portable</DebugType>
     <Deterministic>true</Deterministic>

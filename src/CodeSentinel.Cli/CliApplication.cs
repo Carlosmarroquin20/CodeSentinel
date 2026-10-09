@@ -31,7 +31,7 @@ internal static class CliApplication
 
         var formatOption = new Option<string?>(
             aliases: ["--format", "-f"],
-            description: "Report format (json, html). Inferred from --output extension when omitted; defaults to json.");
+            description: "Report format (json, html, sarif). Inferred from --output extension when omitted; defaults to json.");
 
         var outputOption = new Option<FileInfo?>(
             aliases: ["--output", "-o"],

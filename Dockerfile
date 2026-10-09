@@ -9,7 +9,9 @@ WORKDIR /src
 # Copy only the files needed to restore first, so the layer cache survives
 # code-only changes. Project references are explicit so transitive csproj
 # files must also be present at restore time.
-COPY Directory.Build.props Directory.Packages.props ./
+# .editorconfig is required too: the build enforces code style, and without
+# it the analyzers fall back to defaults that reject this codebase.
+COPY Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/CodeSentinel.Core/CodeSentinel.Core.csproj                     src/CodeSentinel.Core/
 COPY src/CodeSentinel.Application/CodeSentinel.Application.csproj       src/CodeSentinel.Application/
 COPY src/CodeSentinel.Infrastructure/CodeSentinel.Infrastructure.csproj src/CodeSentinel.Infrastructure/

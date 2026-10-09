@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
 # --- Build stage ------------------------------------------------------------
-# The full .NET 8 SDK image has everything needed to restore, build, and publish.
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Uses the same SDK major version as the CI runners so analyzers behave the same
+# in both places. The published binary still targets net8.0 and is self-contained.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
 

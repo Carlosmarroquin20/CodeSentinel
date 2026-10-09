@@ -32,3 +32,37 @@ jobs:
 
       - name: Test
         run: dotnet test CodeSentinel.sln --no-build --configuration Release --verbosity normal
+
+  package:
+    name: package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack the global tool
+        run: dotnet pack src/CodeSentinel.Cli --configuration Release
+
+      - name: Install and run the packed tool
+        run: |
+          dotnet tool install --global --add-source ./artifacts/nupkg CodeSentinel.Cli
+          codesentinel --version
+
+      - name: Build the Docker image
+        run: docker build --tag codesentinel:ci .
+
+      - name: Scan this repository from the container
+        run: docker run --rm -v "$PWD:/scan" codesentinel:ci /scan --fail-on High
+
+      - name: Scan a remote repository from the container
+        # Exit code 1 only means the remote repository has findings; 2 is a scan failure.
+        run: |
+          status=0
+          docker run --rm codesentinel:ci https://github.com/octocat/Hello-World.git || status=$?
+          if [ "$status" -gt 1 ]; then exit "$status"; fi

@@ -5,6 +5,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # FluentAssertions 8 moved to a paid license for commercial use; stay on the last free major.
+      - dependency-name: FluentAssertions
+        versions: [">=8.0.0"]
     groups:
       microsoft-extensions:
         patterns:

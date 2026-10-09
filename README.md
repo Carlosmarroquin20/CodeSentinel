@@ -5,8 +5,8 @@ coding patterns, and misconfigurations — then assigns a security score so the
 result is easy to act on in code review and CI/CD.
 
 Built from scratch on .NET 8 with a clean, extensible architecture: rules are
-plug-in components, file sources can be swapped (local today, Git remote later),
-and report writers compose freely (JSON and HTML today, SARIF later).
+plug-in components, file sources can be swapped (local paths and Git remotes),
+and report writers compose freely (JSON, HTML, and SARIF).
 
 ## Status
 
@@ -173,7 +173,7 @@ repository's Security tab:
 
 - name: Upload SARIF to GitHub code scanning
   if: always()
-  uses: github/codeql-action/upload-sarif@v3
+  uses: github/codeql-action/upload-sarif@v4
   with:
     sarif_file: codesentinel.sarif
 ```

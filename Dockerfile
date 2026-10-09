@@ -2,7 +2,7 @@
 
 # --- Build stage ------------------------------------------------------------
 # The full .NET 8 SDK image has everything needed to restore, build, and publish.
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
 

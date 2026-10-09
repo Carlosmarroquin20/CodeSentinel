@@ -113,7 +113,7 @@ internal sealed class SarifReportWriter : IReportWriter
     // unusual build configuration).
     private static string ResolveProjectUrl()
     {
-        const string Fallback = "https://github.com/Ema322/CodeSentinel";
+        const string Fallback = "https://github.com/Carlosmarroquin20/CodeSentinel";
 
         var value = typeof(SarifReportWriter).Assembly
             .GetCustomAttributes<AssemblyMetadataAttribute>()

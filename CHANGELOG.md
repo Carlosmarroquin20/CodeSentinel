@@ -73,5 +73,5 @@ Infrastructure, and CLI layers.
 - Single source of truth for the project URL in `Directory.Build.props`,
   surfaced as MSBuild property and as runtime assembly metadata.
 
-[Unreleased]: https://github.com/Ema322/CodeSentinel/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Ema322/CodeSentinel/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Carlosmarroquin20/CodeSentinel/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Carlosmarroquin20/CodeSentinel/releases/tag/v0.1.0

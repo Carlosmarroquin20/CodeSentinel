@@ -25,7 +25,7 @@
     <!-- Single source of truth for the project's homepage. Consumed by Cli.csproj
          packaging metadata and exposed as assembly metadata for runtime lookup
          (e.g., the SARIF writer's informationUri field). -->
-    <CodeSentinelProjectUrl>https://github.com/Ema322/CodeSentinel</CodeSentinelProjectUrl>
+    <CodeSentinelProjectUrl>https://github.com/Carlosmarroquin20/CodeSentinel</CodeSentinelProjectUrl>
   </PropertyGroup>
 
   <ItemGroup Label="Assembly-level metadata for runtime lookup">

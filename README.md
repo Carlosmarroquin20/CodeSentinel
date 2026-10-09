@@ -1,5 +1,9 @@
 # CodeSentinel
 
+[![build](https://github.com/Carlosmarroquin20/CodeSentinel/actions/workflows/build.yml/badge.svg)](https://github.com/Carlosmarroquin20/CodeSentinel/actions/workflows/build.yml)
+[![security](https://github.com/Carlosmarroquin20/CodeSentinel/actions/workflows/security.yml/badge.svg)](https://github.com/Carlosmarroquin20/CodeSentinel/actions/workflows/security.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Security scanner for source code repositories. Detects exposed secrets, insecure
 coding patterns, and misconfigurations — then assigns a security score so the
 result is easy to act on in code review and CI/CD.
@@ -12,8 +16,8 @@ and report writers compose freely (JSON, HTML, and SARIF).
 
 MVP complete. Scanning engine, scoring, JSON/HTML/SARIF reporting, CLI surface,
 Docker image, GitHub Actions integration, remote-repository support, and
-distribution as a .NET global tool are all in place. **202 tests passing**
-across Core, Application, Infrastructure, and CLI layers.
+distribution as a .NET global tool are all in place, with tests across the
+Core, Application, Infrastructure, and CLI layers.
 
 ## What it detects
 

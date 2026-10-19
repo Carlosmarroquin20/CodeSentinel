@@ -28,6 +28,7 @@ internal sealed class LocalFileSource : IFileSource
         ".nupkg", ".snupkg", ".bin", ".dat", ".pyc"
     };
 
+    // Directories the process cannot open are skipped rather than aborting the walk.
     // Symbolic links and junctions are skipped, never followed. A scanned repository
     // (especially a cloned remote one) is untrusted input: a link pointing at
     // ~/.aws/credentials or /etc would otherwise pull files from outside the scan
@@ -35,6 +36,7 @@ internal sealed class LocalFileSource : IFileSource
     private static readonly EnumerationOptions WalkOptions = new()
     {
         RecurseSubdirectories = true,
+        IgnoreInaccessible = true,
         AttributesToSkip = FileAttributes.ReparsePoint,
     };
 
@@ -82,7 +84,7 @@ internal sealed class LocalFileSource : IFileSource
                 var lines = await File.ReadAllLinesAsync(file.FullName, cancellationToken).ConfigureAwait(false);
                 scannableFile = new ScannableFile(file.FullName, relativePath, lines);
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _logger.LogWarning(ex, "Skipping unreadable file: {Path}", relativePath);
             }

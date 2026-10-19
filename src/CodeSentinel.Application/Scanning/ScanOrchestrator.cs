@@ -44,8 +44,17 @@ internal sealed class ScanOrchestrator : IScanOrchestrator
             _logger.LogDebug("Scanning {RelativePath}", file.RelativePath);
             foreach (var rule in rules)
             {
-                var ruleFindings = await rule.AnalyzeAsync(file, cancellationToken).ConfigureAwait(false);
-                findings.AddRange(ruleFindings);
+                try
+                {
+                    var ruleFindings = await rule.AnalyzeAsync(file, cancellationToken).ConfigureAwait(false);
+                    findings.AddRange(ruleFindings);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // One misbehaving rule (for example a regex hitting its match timeout on
+                    // a pathological line) must not abort the whole scan.
+                    _logger.LogWarning(ex, "Rule {RuleId} failed on {RelativePath}; skipping", rule.Metadata.Id, file.RelativePath);
+                }
             }
         }
 

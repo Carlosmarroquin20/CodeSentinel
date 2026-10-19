@@ -35,6 +35,9 @@ internal sealed class ShannonEntropyRule : IDetectionRule
                 break;
 
             var line = file.Lines[i];
+            if (!CandidatePattern.IsMatch(line))
+                continue;
+
             foreach (Match match in CandidatePattern.Matches(line))
             {
                 var candidate = match.Groups[1].Value;

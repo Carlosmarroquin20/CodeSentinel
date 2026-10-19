@@ -35,7 +35,6 @@ internal sealed class LocalFileSource : IFileSource
     // root into the report.
     private static readonly EnumerationOptions WalkOptions = new()
     {
-        RecurseSubdirectories = true,
         IgnoreInaccessible = true,
         AttributesToSkip = FileAttributes.ReparsePoint,
     };
@@ -62,7 +61,7 @@ internal sealed class LocalFileSource : IFileSource
             yield break;
         }
 
-        foreach (var file in root.EnumerateFiles("*", WalkOptions))
+        foreach (var file in EnumerateCandidateFiles(root))
         {
             if (cancellationToken.IsCancellationRequested)
                 yield break;
@@ -94,28 +93,30 @@ internal sealed class LocalFileSource : IFileSource
         }
     }
 
-    private static bool IsEligible(FileInfo file)
+    // Walks the tree manually so ignored directories are pruned before descending into
+    // them; a large node_modules or .git is never enumerated. Only directories below the
+    // scan root are matched against the ignore list, so a repository that happens to live
+    // inside a folder named "build" or "packages" is still scanned.
+    private static IEnumerable<FileInfo> EnumerateCandidateFiles(DirectoryInfo root)
     {
-        if (file.Length > MaxFileSizeBytes)
-            return false;
+        var pending = new Stack<DirectoryInfo>();
+        pending.Push(root);
 
-        if (BinaryExtensions.Contains(file.Extension))
-            return false;
-
-        return !ContainsIgnoredDirectory(file.DirectoryName);
-    }
-
-    private static bool ContainsIgnoredDirectory(string? path)
-    {
-        if (path is null)
-            return false;
-
-        foreach (var segment in path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        while (pending.Count > 0)
         {
-            if (IgnoredDirectoryNames.Contains(segment))
-                return true;
-        }
+            var directory = pending.Pop();
 
-        return false;
+            foreach (var subdirectory in directory.EnumerateDirectories("*", WalkOptions))
+            {
+                if (!IgnoredDirectoryNames.Contains(subdirectory.Name))
+                    pending.Push(subdirectory);
+            }
+
+            foreach (var file in directory.EnumerateFiles("*", WalkOptions))
+                yield return file;
+        }
     }
+
+    private static bool IsEligible(FileInfo file) =>
+        file.Length <= MaxFileSizeBytes && !BinaryExtensions.Contains(file.Extension);
 }

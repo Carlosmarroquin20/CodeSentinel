@@ -49,6 +49,30 @@ public class LocalFileSourceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetFilesAsync_ScansRootLocatedInsideAnIgnoredDirectoryName()
+    {
+        var root = Directory.CreateDirectory(Path.Combine(_tempDir, "build", "repo")).FullName;
+        File.WriteAllText(Path.Combine(root, "app.py"), "x = 1");
+        File.WriteAllText(Path.Combine(Directory.CreateDirectory(Path.Combine(root, "build")).FullName, "out.py"), "y = 2");
+
+        var files = await CollectAsync(_source.GetFilesAsync(ScanRequest.ForPath(root), CancellationToken.None));
+
+        files.Select(f => f.FileName).Should().Equal("app.py");
+    }
+
+    [Fact]
+    public async Task GetFilesAsync_SkipsNestedIgnoredDirectories()
+    {
+        var nested = Directory.CreateDirectory(Path.Combine(_tempDir, "web", "node_modules", "lib")).FullName;
+        File.WriteAllText(Path.Combine(nested, "index.js"), "module.exports = 1;");
+        File.WriteAllText(Path.Combine(_tempDir, "web", "app.js"), "run();");
+
+        var files = await CollectAsync(_source.GetFilesAsync(ScanRequest.ForPath(_tempDir), CancellationToken.None));
+
+        files.Select(f => f.FileName).Should().Equal("app.js");
+    }
+
+    [Fact]
     public async Task GetFilesAsync_WithNonExistentRoot_YieldsNothing()
     {
         var request = ScanRequest.ForPath(Path.Combine(_tempDir, "does-not-exist"));

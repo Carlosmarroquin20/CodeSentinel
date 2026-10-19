@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   expressions or documentation references. Candidates must use a base64,
   base64url or hex alphabet and contain both digits and letters. Scanning
   `serilog/serilog` went from 187 false positives to none.
+- A report whose writer failed or was cancelled half-way no longer leaves a
+  truncated file behind; reports are written to a temporary file and moved
+  into place when complete.
+- JSON reports order findings by path with ordinal comparison, like the HTML
+  and SARIF reports, so the order no longer depends on the machine's culture.
 - Fixed an intermittent failure in the CLI test suite caused by tests sharing
   the process console in parallel.
 

@@ -137,6 +137,7 @@ codesentinel list-rules
 | `--output`, `-o`  | Path where the report will be written. If omitted, no file is created.                               |
 | `--fail-on`       | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
 | `--exclude`, `-e` | Glob pattern to exclude from the scan. Repeatable. Combined with patterns from `.codesentinelignore` if present in the scan root. |
+| `--no-ignore-file` | Do not read `.codesentinelignore` from the scan root. Use it when scanning repositories you do not control, since their ignore file could hide files. `--exclude` still applies. |
 | `--verbose`, `-v` | Show debug-level log output, including per-file scan progress.                                       |
 | `--quiet`, `-q`   | Suppress informational log output; warnings and errors are still shown. Ideal for CI/CD pipelines.   |
 
@@ -161,7 +162,9 @@ docs/**
 **/*.generated.cs
 ```
 
-Patterns from both sources are combined. Note that CodeSentinel also skips a
+Patterns from both sources are combined. When scanning a repository you do not
+control, pass `--no-ignore-file`: its `.codesentinelignore` is written by the
+same people whose code you are checking. Note that CodeSentinel also skips a
 default set of directories (`.git`, `node_modules`, `bin`, `obj`, `dist`,
 `build`, `vendor`, `__pycache__`, `target`, `.terraform`, and similar) without
 requiring explicit configuration. These names are matched below the scan root

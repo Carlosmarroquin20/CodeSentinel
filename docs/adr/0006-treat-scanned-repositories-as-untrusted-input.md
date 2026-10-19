@@ -46,3 +46,10 @@ it should not:
   that file; it is not implemented yet.
 - CI can distinguish "the code has problems" from "the scanner failed" and
   react differently to each.
+
+## Update 2026-10-19
+
+The `--no-ignore-file` option now skips the repository's `.codesentinelignore`,
+which closes the gap described above for adversarial scans. The file is still
+honoured by default because for a project scanning itself it is trusted
+configuration.

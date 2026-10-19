@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The HTML report declares a Content-Security-Policy that blocks scripts and
   external requests.
 
+### Added
+- `--no-ignore-file` skips the scanned repository's `.codesentinelignore`, for
+  scans of code you do not control.
+
 ### Fixed
 - Repositories located under a folder named `build`, `packages`, `bin`,
   `target` or similar were scanned as empty and scored 100. Ignored directory

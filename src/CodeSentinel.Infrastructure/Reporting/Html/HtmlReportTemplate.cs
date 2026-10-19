@@ -4,11 +4,16 @@ namespace CodeSentinel.Infrastructure.Reporting.Html;
 // so the visual style can be reviewed independently of the writer logic.
 internal static class HtmlReportTemplate
 {
+    // The report embeds snippets from untrusted files. Everything is HTML-encoded, and
+    // the Content-Security-Policy is a second line of defence: no scripts, no external
+    // requests, only the inline stylesheet below.
     public const string HeadStart = """
         <!DOCTYPE html>
         <html lang="en">
         <head>
           <meta charset="utf-8">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+          <meta name="referrer" content="no-referrer">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>CodeSentinel Security Report</title>
           <style>

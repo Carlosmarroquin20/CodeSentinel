@@ -30,6 +30,16 @@ public class HtmlReportWriterTests
     }
 
     [Fact]
+    public async Task WriteAsync_DeclaresRestrictiveContentSecurityPolicy()
+    {
+        var html = await RenderAsync(BuildEmptyReport());
+
+        html.Should().Contain("http-equiv=\"Content-Security-Policy\"");
+        html.Should().Contain("default-src 'none'");
+        html.Should().NotContain("<script");
+    }
+
+    [Fact]
     public async Task WriteAsync_EmbedsCss()
     {
         var html = await RenderAsync(BuildEmptyReport());

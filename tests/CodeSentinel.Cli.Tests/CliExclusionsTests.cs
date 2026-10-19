@@ -87,6 +87,32 @@ public class CliExclusionsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task NoIgnoreFile_ScansPathsHiddenByTheIgnoreFile()
+    {
+        File.WriteAllText(Path.Combine(_tempDir, ".codesentinelignore"), "legacy/**\n");
+        Directory.CreateDirectory(Path.Combine(_tempDir, "legacy"));
+        File.WriteAllText(Path.Combine(_tempDir, "legacy", "leaks.env"), $"AWS_ACCESS_KEY_ID={FakeAwsKey}");
+
+        var exit = await CliApplication.RunAsync([_tempDir, "--no-ignore-file"], _provider);
+
+        exit.Should().Be(CliApplication.ExitFindingsAboveThreshold);
+    }
+
+    [Fact]
+    public async Task NoIgnoreFile_StillAppliesExcludeFlags()
+    {
+        File.WriteAllText(Path.Combine(_tempDir, ".codesentinelignore"), "other/**\n");
+        Directory.CreateDirectory(Path.Combine(_tempDir, "legacy"));
+        File.WriteAllText(Path.Combine(_tempDir, "legacy", "leaks.env"), $"AWS_ACCESS_KEY_ID={FakeAwsKey}");
+
+        var exit = await CliApplication.RunAsync(
+            [_tempDir, "--no-ignore-file", "--exclude", "legacy/**"],
+            _provider);
+
+        exit.Should().Be(CliApplication.ExitSuccess);
+    }
+
+    [Fact]
     public async Task CodeSentinelIgnoreFile_SkipsCommentsAndBlankLines()
     {
         File.WriteAllText(

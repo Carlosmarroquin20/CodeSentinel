@@ -51,6 +51,11 @@ internal static class CliApplication
             AllowMultipleArgumentsPerToken = true,
         };
 
+        var noIgnoreFileOption = new Option<bool>(
+            aliases: ["--no-ignore-file"],
+            description: "Do not read " + IgnoreFileName + " from the scan root. Use this when scanning "
+                       + "repositories you do not control, whose ignore file could hide files from the scan.");
+
         var verboseOption = new Option<bool>(
             aliases: ["--verbose", "-v"],
             description: "Show debug-level log output, including per-file scan progress.");
@@ -66,6 +71,7 @@ internal static class CliApplication
             outputOption,
             failOnOption,
             excludeOption,
+            noIgnoreFileOption,
         };
 
         // --verbose and --quiet are applied at Bootstrap time (before the parser runs).
@@ -79,18 +85,19 @@ internal static class CliApplication
             async (context) =>
             {
                 var target = context.ParseResult.GetValueForArgument(targetArgument);
-                var format = context.ParseResult.GetValueForOption(formatOption);
-                var output = context.ParseResult.GetValueForOption(outputOption);
-                var failOn = context.ParseResult.GetValueForOption(failOnOption);
-                var excludes = context.ParseResult.GetValueForOption(excludeOption) ?? [];
+                var options = new ScanOptions(
+                    Format: context.ParseResult.GetValueForOption(formatOption),
+                    Output: context.ParseResult.GetValueForOption(outputOption),
+                    FailOn: context.ParseResult.GetValueForOption(failOnOption),
+                    Excludes: context.ParseResult.GetValueForOption(excludeOption) ?? [],
+                    UseIgnoreFile: !context.ParseResult.GetValueForOption(noIgnoreFileOption));
 
                 // Ctrl+C is surfaced through the invocation context; the caller's token is
                 // still honoured so tests and hosts can cancel programmatically.
                 using var linked = CancellationTokenSource.CreateLinkedTokenSource(
                     cancellationToken, context.GetCancellationToken());
 
-                exitCode = await RunScanSafelyAsync(
-                    target, format, output, failOn, excludes, services, linked.Token).ConfigureAwait(false);
+                exitCode = await RunScanSafelyAsync(target, options, services, linked.Token).ConfigureAwait(false);
             });
 
         var listRulesCommand = new Command("list-rules", "List all detection rules registered in the scanner.");
@@ -154,10 +161,7 @@ internal static class CliApplication
     // default exception handler, which would also return 1.
     private static async Task<int> RunScanSafelyAsync(
         string target,
-        string? format,
-        FileInfo? output,
-        Severity? failOn,
-        IReadOnlyList<string> cliExcludes,
+        ScanOptions options,
         IServiceProvider services,
         CancellationToken cancellationToken)
     {
@@ -165,8 +169,7 @@ internal static class CliApplication
 
         try
         {
-            return await RunScanAsync(target, format, output, failOn, cliExcludes, services, cancellationToken)
-                .ConfigureAwait(false);
+            return await RunScanAsync(target, options, services, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -185,10 +188,7 @@ internal static class CliApplication
     // temp directory does not linger.
     private static async Task<int> RunScanAsync(
         string target,
-        string? format,
-        FileInfo? output,
-        Severity? failOn,
-        IReadOnlyList<string> cliExcludes,
+        ScanOptions options,
         IServiceProvider services,
         CancellationToken cancellationToken)
     {
@@ -214,7 +214,7 @@ internal static class CliApplication
                 return await ExecuteScanAsync(
                     new DirectoryInfo(cloned.LocalPath),
                     displayTarget: safeTarget,
-                    format, output, failOn, cliExcludes, services, logger, cancellationToken).ConfigureAwait(false);
+                    options, services, logger, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -222,16 +222,13 @@ internal static class CliApplication
         return await ExecuteScanAsync(
             path,
             displayTarget: path.FullName,
-            format, output, failOn, cliExcludes, services, logger, cancellationToken).ConfigureAwait(false);
+            options, services, logger, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<int> ExecuteScanAsync(
         DirectoryInfo path,
         string displayTarget,
-        string? format,
-        FileInfo? output,
-        Severity? failOn,
-        IReadOnlyList<string> cliExcludes,
+        ScanOptions options,
         IServiceProvider services,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -242,7 +239,7 @@ internal static class CliApplication
             return ExitScanError;
         }
 
-        var ignoreGlobs = GatherIgnoreGlobs(path, cliExcludes, logger);
+        var ignoreGlobs = GatherIgnoreGlobs(path, options, logger);
         var orchestrator = services.GetRequiredService<IScanOrchestrator>();
         var request = new ScanRequest(path.FullName, ignoreGlobs);
         var result = await orchestrator.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
@@ -254,15 +251,15 @@ internal static class CliApplication
             result.Score.Value,
             result.Score.Grade);
 
-        if (output is not null)
+        if (options.Output is not null)
         {
-            var reportExit = await TryWriteReportAsync(result, displayTarget, format, output, services, logger, cancellationToken)
+            var reportExit = await TryWriteReportAsync(result, displayTarget, options.Format, options.Output, services, logger, cancellationToken)
                 .ConfigureAwait(false);
             if (reportExit != ExitSuccess)
                 return reportExit;
         }
 
-        return ComputeFindingsExitCode(result.Findings, failOn, logger);
+        return ComputeFindingsExitCode(result.Findings, options.FailOn, logger);
     }
 
     internal static bool LooksLikeGitUrl(string target) =>
@@ -341,14 +338,20 @@ internal static class CliApplication
 
     private static List<string> GatherIgnoreGlobs(
         DirectoryInfo scanRoot,
-        IReadOnlyList<string> cliExcludes,
+        ScanOptions options,
         ILogger logger)
     {
-        var globs = new List<string>(cliExcludes);
+        var globs = new List<string>(options.Excludes);
         var ignoreFile = new FileInfo(Path.Combine(scanRoot.FullName, IgnoreFileName));
 
         if (!ignoreFile.Exists)
             return globs;
+
+        if (!options.UseIgnoreFile)
+        {
+            logger.LogInformation("Ignoring {File} because --no-ignore-file was given", IgnoreFileName);
+            return globs;
+        }
 
         try
         {
@@ -370,6 +373,13 @@ internal static class CliApplication
 
         return globs;
     }
+
+    private sealed record ScanOptions(
+        string? Format,
+        FileInfo? Output,
+        Severity? FailOn,
+        IReadOnlyList<string> Excludes,
+        bool UseIgnoreFile);
 
     private static string GetScannerVersion() =>
         typeof(CliApplication).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";

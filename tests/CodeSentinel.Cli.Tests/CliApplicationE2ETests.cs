@@ -43,6 +43,18 @@ public class CliApplicationE2ETests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task RunAsync_WhenCancelled_ReturnsExitScanErrorRatherThanFindings()
+    {
+        File.WriteAllText(Path.Combine(_tempDir, "config.env"), $"AWS_ACCESS_KEY_ID={FakeAwsKey}");
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var exit = await CliApplication.RunAsync([_tempDir], _provider, cts.Token);
+
+        exit.Should().Be(CliApplication.ExitScanError);
+    }
+
+    [Fact]
     public async Task RunAsync_WithJsonOutput_WritesValidJsonReport()
     {
         File.WriteAllText(Path.Combine(_tempDir, "config.env"), $"AWS_ACCESS_KEY_ID={FakeAwsKey}");

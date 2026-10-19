@@ -84,8 +84,13 @@ internal static class CliApplication
                 var failOn = context.ParseResult.GetValueForOption(failOnOption);
                 var excludes = context.ParseResult.GetValueForOption(excludeOption) ?? [];
 
-                exitCode = await RunScanAsync(
-                    target, format, output, failOn, excludes, services, cancellationToken).ConfigureAwait(false);
+                // Ctrl+C is surfaced through the invocation context; the caller's token is
+                // still honoured so tests and hosts can cancel programmatically.
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancellationToken, context.GetCancellationToken());
+
+                exitCode = await RunScanSafelyAsync(
+                    target, format, output, failOn, excludes, services, linked.Token).ConfigureAwait(false);
             });
 
         var listRulesCommand = new Command("list-rules", "List all detection rules registered in the scanner.");
@@ -141,6 +146,38 @@ internal static class CliApplication
         }
 
         return ExitSuccess;
+    }
+
+    // Exit code 1 is reserved for "findings above threshold", so CI pipelines can tell a
+    // dirty repository from a broken scan. Anything that escapes the scan pipeline is
+    // reported as a scan error (2) instead of falling through to System.CommandLine's
+    // default exception handler, which would also return 1.
+    private static async Task<int> RunScanSafelyAsync(
+        string target,
+        string? format,
+        FileInfo? output,
+        Severity? failOn,
+        IReadOnlyList<string> cliExcludes,
+        IServiceProvider services,
+        CancellationToken cancellationToken)
+    {
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("codesentinel");
+
+        try
+        {
+            return await RunScanAsync(target, format, output, failOn, cliExcludes, services, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning("Scan cancelled.");
+            return ExitScanError;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Scan failed unexpectedly.");
+            return ExitScanError;
+        }
     }
 
     // Top-level dispatch: clone first if the target is a Git URL, otherwise scan the

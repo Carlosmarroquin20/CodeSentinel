@@ -24,6 +24,10 @@ RUN dotnet restore src/CodeSentinel.Cli/CodeSentinel.Cli.csproj \
 # Now copy the rest of the source and publish.
 COPY src/ src/
 
+# Release builds pass the tag version (for example --build-arg VERSION=0.2.0);
+# local builds keep the version from Directory.Build.props.
+ARG VERSION=""
+
 RUN dotnet publish src/CodeSentinel.Cli/CodeSentinel.Cli.csproj \
     --configuration Release \
     --runtime linux-x64 \
@@ -32,7 +36,8 @@ RUN dotnet publish src/CodeSentinel.Cli/CodeSentinel.Cli.csproj \
     --output /app/publish \
     -p:PublishSingleFile=true \
     -p:DebugType=None \
-    -p:DebugSymbols=false
+    -p:DebugSymbols=false \
+    ${VERSION:+-p:Version=$VERSION}
 
 # --- Runtime stage ----------------------------------------------------------
 # Chiseled runtime-deps: minimal Ubuntu with the native dependencies .NET needs,

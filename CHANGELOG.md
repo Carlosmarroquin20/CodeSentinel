@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Symbolic links and junctions are no longer followed while walking the scan
+  root, so a committed link cannot pull files from outside the repository into
+  a report.
+- Credentials embedded in remote Git URLs are masked in logs and report headers.
+- The HTML report declares a Content-Security-Policy that blocks scripts and
+  external requests.
+
+### Fixed
+- Repositories located under a folder named `build`, `packages`, `bin`,
+  `target` or similar were scanned as empty and scored 100. Ignored directory
+  names are now matched below the scan root only.
+- UTF-16 and UTF-32 text files with a byte-order mark were treated as binary
+  and never scanned.
+- `CS003` now detects ASCII-armored OpenPGP keys (`PGP PRIVATE KEY BLOCK`) and
+  encrypted PKCS#8 keys.
+- A single secret matched by several rules is reported once, under the
+  highest-severity rule, instead of being penalised multiple times.
+- Cancellation (Ctrl+C) and unexpected errors exit with code `2` instead of
+  `1`, which is reserved for findings above the threshold. Ctrl+C now also
+  aborts an in-flight remote clone.
+- A rule that fails on one file, or a file that cannot be read, no longer
+  aborts the whole scan.
+- Fixed an intermittent failure in the CLI test suite caused by tests sharing
+  the process console in parallel.
+
+### Changed
+- Findings carry an end column. SARIF emits it as `region.endColumn` and JSON as
+  `location.endColumn`.
+- Scans run files in parallel and read each file once. A benchmark repository
+  of 35,000 files went from 7.25 s to 2.33 s with identical findings.
+- Findings in `ScanResult` are sorted by path, line, column and rule ID.
+- Build: `AnalysisLevel` is pinned, the Docker image builds with the same SDK
+  major version as CI, and CI now packs the tool and builds the image.
+
+### Documentation
+- Architecture Decision Records in `docs/adr/`.
+- `SECURITY.md` with the vulnerability reporting policy.
+
 ## [0.1.0] - 2026-05-13
 
 Initial public release. CodeSentinel is functional end-to-end as a security

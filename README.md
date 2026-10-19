@@ -245,6 +245,26 @@ docker run --rm -v "$(pwd):/scan" codesentinel /scan -o /scan/report.sarif --fai
 The image runs as a non-root user. The mounted volume must allow that user to
 read source files and (if `--output` is used) write into the chosen directory.
 
+## Releasing
+
+Pushing a tag such as `v0.2.0` runs `.github/workflows/release.yml`, which:
+
+1. builds and tests the solution with that version;
+2. packs the global tool and attaches the `.nupkg` to a GitHub Release with
+   generated notes;
+3. pushes the Docker image to `ghcr.io/<owner>/codesentinel` tagged `0.2.0`,
+   `0.2` and `latest`;
+4. publishes the package to nuget.org, but only when a `NUGET_API_KEY`
+   repository secret is configured.
+
+```sh
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+Move the `[Unreleased]` entries in `CHANGELOG.md` under the new version before
+tagging.
+
 ## Listing rules
 
 To see which rules are bundled with the binary, run:

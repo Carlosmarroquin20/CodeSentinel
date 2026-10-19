@@ -25,7 +25,7 @@ Core, Application, Infrastructure, and CLI layers.
 | ------- | ---------------- | ---------- | ---------------------------------------------------------------- |
 | `CS001` | Secret           | Critical   | AWS access key IDs (`AKIA…`, `ASIA…`)                            |
 | `CS002` | Secret           | Critical   | AWS secret access keys in assignment expressions                 |
-| `CS003` | Secret           | Critical   | PEM private key headers (RSA, EC, OpenSSH, DSA, PGP)             |
+| `CS003` | Secret           | Critical   | Private key headers (RSA, EC, OpenSSH, DSA, PKCS#8, OpenPGP)     |
 | `CS004` | Secret           | High       | JSON Web Tokens                                                  |
 | `CS005` | Secret           | High       | Hardcoded passwords, API keys, secrets, and tokens               |
 | `CS006` | Secret           | Critical   | GitHub tokens (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`) |
@@ -36,9 +36,19 @@ Core, Application, Infrastructure, and CLI layers.
 | `CS101` | Insecure Pattern | Medium     | MD5 / SHA-1 usage (.NET, Python, Java)                           |
 | `CS900` | Heuristic        | Medium     | High-entropy strings (Shannon entropy ≥ 4.5)                     |
 
-Findings include severity, confidence, a redacted snippet, and the file path
-and line number. Snippets in secret-category rules are redacted before they
+Findings include severity, confidence, a redacted snippet, and the file path,
+line and column span. Snippets in secret-category rules are redacted before they
 reach the report — actual credentials never appear in output.
+
+When several secret rules match the same characters (a GitHub token assigned to
+a variable called `token` matches `CS006`, `CS005` and `CS900`), only the
+highest-severity finding is kept, so one leak counts once. See
+[ADR 0008](docs/adr/0008-consolidate-overlapping-secret-findings.md).
+
+Text files are decoded as UTF-8, or as UTF-16/UTF-32 when they start with a
+byte-order mark. Files over 1 MB, binary files and symbolic links are skipped;
+links are never followed, so a committed link cannot pull files from outside
+the repository into a report.
 
 ## Install
 
@@ -154,17 +164,25 @@ docs/**
 Patterns from both sources are combined. Note that CodeSentinel also skips a
 default set of directories (`.git`, `node_modules`, `bin`, `obj`, `dist`,
 `build`, `vendor`, `__pycache__`, `target`, `.terraform`, and similar) without
-requiring explicit configuration.
+requiring explicit configuration. These names are matched below the scan root
+only, so a repository that itself lives in a folder called `build` is still
+scanned.
 
 ### Exit codes
 
 CodeSentinel returns deterministic exit codes designed for CI/CD pipelines:
 
-| Code | Meaning                                |
-| ---- | -------------------------------------- |
-| `0`  | Scan completed without findings.       |
-| `1`  | Scan completed with findings.          |
-| `2`  | Scan failed (invalid path, I/O, etc.). |
+| Code | Meaning                                                                  |
+| ---- | ------------------------------------------------------------------------ |
+| `0`  | Scan completed without findings (or none at or above `--fail-on`).       |
+| `1`  | Scan completed with findings at or above the threshold.                  |
+| `2`  | Scan did not complete: invalid path, clone failure, cancellation (Ctrl+C), or an unexpected error. |
+
+Code `1` is never used for errors, so a pipeline can tell a dirty repository
+from a broken scan.
+
+Credentials embedded in a remote URL (`https://<token>@github.com/...`) are
+masked in logs and in the report header.
 
 ### Example: GitHub Actions
 
@@ -305,7 +323,7 @@ Cli ──┬──→ Application ──→ Core
 | ----------------------------- | ---------------------------------------------------------------- |
 | `CodeSentinel.Core`           | Domain model: findings, rule contracts, scan results, scoring.   |
 | `CodeSentinel.Application`    | Use cases and ports (file source, rule provider, report writer). |
-| `CodeSentinel.Infrastructure` | Adapters: file walker, built-in rules, JSON/HTML writers.        |
+| `CodeSentinel.Infrastructure` | Adapters: file walker, built-in rules, JSON/HTML/SARIF writers, Git cloner. |
 | `CodeSentinel.Cli`            | Command-line entry point and DI composition root.                |
 
 **Why this structure:** the scanning core has zero external dependencies — no
@@ -313,6 +331,15 @@ I/O, no Git, no HTTP. Detection rules are `IDetectionRule` implementations,
 file sources are `IFileSource` implementations, and report writers are
 `IReportWriter` implementations. New formats and rules plug in without
 touching the orchestrator.
+
+Files are analysed in parallel, one worker per core, and findings are sorted
+afterwards so results are identical from run to run. On a synthetic repository
+of 5,000 source files (1.5 million lines) plus 30,000 files in `node_modules`,
+a scan takes about 2.3 seconds on a 12-core machine, down from 7.3 seconds
+before the work described in [ADR 0007](docs/adr/0007-parallel-scanning.md).
+
+The reasoning behind these and other design choices is recorded as
+[Architecture Decision Records](docs/adr/README.md).
 
 ## Build and test
 
@@ -352,6 +379,7 @@ Test layout:
 src/         Production projects (Core, Application, Infrastructure, Cli).
 tests/       Unit and integration test projects.
 samples/     Deliberately-vulnerable fixtures used by tests and demos.
+docs/adr/    Architecture Decision Records.
 ```
 
 ## Roadmap

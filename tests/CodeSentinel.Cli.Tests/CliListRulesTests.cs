@@ -4,8 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CodeSentinel.Cli.Tests;
 
 // End-to-end tests for the list-rules subcommand.
-// Uses Console.SetOut to capture stdout; xUnit runs tests within a class sequentially
-// by default, so there is no race on the global Console writer.
+// Uses Console.SetOut to capture stdout. Test parallelization is disabled for this
+// assembly (see AssemblyInfo.cs), so no other test writes to the swapped writer.
 public class CliListRulesTests : IAsyncDisposable
 {
     private readonly ServiceProvider _provider = Bootstrap.BuildServiceProvider();

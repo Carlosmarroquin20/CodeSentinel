@@ -67,14 +67,20 @@ internal sealed class ScanOrchestrator : IScanOrchestrator
         // Completion order varies between runs; sort so results are reproducible.
         findings.Sort(FindingOrder.Instance);
 
+        var secretRuleIds = rules
+            .Where(r => r.Metadata.Category == RuleCategory.Secret)
+            .Select(r => r.Metadata.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        var consolidated = OverlappingSecretFilter.Apply(findings, secretRuleIds);
+
         sw.Stop();
-        var score = _scorePolicy.Compute(findings, filesScanned);
+        var score = _scorePolicy.Compute(consolidated, filesScanned);
 
         _logger.LogInformation(
             "Scan completed. Files: {FilesScanned}, Findings: {FindingCount}, Score: {Score} ({Grade}), Duration: {Duration}ms",
-            filesScanned, findings.Count, score.Value, score.Grade, (long)sw.Elapsed.TotalMilliseconds);
+            filesScanned, consolidated.Count, score.Value, score.Grade, (long)sw.Elapsed.TotalMilliseconds);
 
-        return new ScanResult(findings.AsReadOnly(), filesScanned, sw.Elapsed, score);
+        return new ScanResult(consolidated.AsReadOnly(), filesScanned, sw.Elapsed, score);
     }
 
     private async Task<List<Finding>> AnalyzeFileAsync(

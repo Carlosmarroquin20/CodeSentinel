@@ -1,4 +1,5 @@
 using CodeSentinel.Application.Abstractions;
+using CodeSentinel.Application.Security;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +25,7 @@ internal sealed class GitRepositoryCloner : IRepositoryCloner
         return Task.Run<IClonedRepository>(() =>
         {
             var tempPath = Path.Combine(Path.GetTempPath(), $"codesentinel-clone-{Guid.NewGuid():N}");
-            _logger.LogInformation("Cloning {Url} into {Path}", remoteUrl, tempPath);
+            _logger.LogInformation("Cloning {Url} into {Path}", UrlRedaction.RedactUserInfo(remoteUrl), tempPath);
 
             try
             {

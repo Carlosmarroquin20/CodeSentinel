@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using CodeSentinel.Application.Abstractions;
+using CodeSentinel.Application.Security;
 using CodeSentinel.Core.Findings;
 using CodeSentinel.Core.Reporting;
 using CodeSentinel.Core.Scanning;
@@ -158,6 +159,7 @@ internal static class CliApplication
 
         if (LooksLikeGitUrl(target))
         {
+            var safeTarget = UrlRedaction.RedactUserInfo(target);
             IClonedRepository cloned;
             try
             {
@@ -166,7 +168,7 @@ internal static class CliApplication
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to clone {Url}", target);
+                logger.LogError(ex, "Failed to clone {Url}", safeTarget);
                 return ExitScanError;
             }
 
@@ -174,7 +176,7 @@ internal static class CliApplication
             {
                 return await ExecuteScanAsync(
                     new DirectoryInfo(cloned.LocalPath),
-                    displayTarget: target,
+                    displayTarget: safeTarget,
                     format, output, failOn, cliExcludes, services, logger, cancellationToken).ConfigureAwait(false);
             }
         }

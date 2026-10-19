@@ -6,9 +6,11 @@ namespace CodeSentinel.Infrastructure.Rules.BuiltIn;
 
 internal sealed class PrivateKeyRule : RegexDetectionRule
 {
-    // Matches PEM private key headers for RSA, EC, OpenSSH, DSA, PGP, and the generic PKCS#8 format.
+    // Matches PEM private key headers for RSA, EC, OpenSSH, DSA, and PKCS#8 (plain and
+    // encrypted), plus the ASCII-armored OpenPGP header, which ends in "KEY BLOCK-----".
+    // An encrypted key is still reported: its passphrase is often weak or committed nearby.
     private static readonly Regex Pattern = new(
-        @"-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----",
+        @"-----BEGIN (?:(?:RSA|EC|OPENSSH|DSA|PGP|ENCRYPTED) )?PRIVATE KEY(?: BLOCK)?-----",
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         matchTimeout: TimeSpan.FromSeconds(1));
 

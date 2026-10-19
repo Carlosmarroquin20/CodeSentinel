@@ -14,6 +14,9 @@ public class PrivateKeyRuleTests
     [InlineData("-----BEGIN OPENSSH PRIVATE KEY-----")]
     [InlineData("-----BEGIN PRIVATE KEY-----")]
     [InlineData("-----BEGIN PGP PRIVATE KEY-----")]
+    [InlineData("-----BEGIN PGP PRIVATE KEY BLOCK-----")]
+    [InlineData("-----BEGIN DSA PRIVATE KEY-----")]
+    [InlineData("-----BEGIN ENCRYPTED PRIVATE KEY-----")]
     public async Task AnalyzeAsync_WithKnownPemHeader_ReturnsOneFinding(string header)
     {
         var file = new ScannableFile("id_rsa", "id_rsa", [header]);
@@ -25,10 +28,13 @@ public class PrivateKeyRuleTests
         findings[0].RuleId.Should().Be("CS003");
     }
 
-    [Fact]
-    public async Task AnalyzeAsync_WithPublicKeyHeader_ReturnsEmpty()
+    [Theory]
+    [InlineData("-----BEGIN PUBLIC KEY-----")]
+    [InlineData("-----BEGIN PGP PUBLIC KEY BLOCK-----")]
+    [InlineData("-----BEGIN CERTIFICATE-----")]
+    public async Task AnalyzeAsync_WithPublicMaterialHeader_ReturnsEmpty(string header)
     {
-        var file = new ScannableFile("id_rsa.pub", "id_rsa.pub", ["-----BEGIN PUBLIC KEY-----"]);
+        var file = new ScannableFile("id_rsa.pub", "id_rsa.pub", [header]);
 
         var findings = await _rule.AnalyzeAsync(file, CancellationToken.None);
 

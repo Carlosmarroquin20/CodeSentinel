@@ -137,6 +137,7 @@ codesentinel list-rules
 | `--output`, `-o`  | Path where the report will be written. If omitted, no file is created.                               |
 | `--fail-on`       | Minimum severity (`Info`, `Low`, `Medium`, `High`, `Critical`) that triggers exit code 1. If omitted, any finding fails. The flag affects the exit code only — reports always include every finding. |
 | `--exclude`, `-e` | Glob pattern to exclude from the scan. Repeatable. Combined with patterns from `.codesentinelignore` if present in the scan root. |
+| `--no-inline-ignore` | Report findings even on lines marked with `codesentinel:ignore`. Use it together with `--no-ignore-file` for repositories you do not control. |
 | `--no-ignore-file` | Do not read `.codesentinelignore` from the scan root. Use it when scanning repositories you do not control, since their ignore file could hide files. `--exclude` still applies. |
 | `--verbose`, `-v` | Show debug-level log output, including per-file scan progress.                                       |
 | `--quiet`, `-q`   | Suppress informational log output; warnings and errors are still shown. Ideal for CI/CD pipelines.   |
@@ -170,6 +171,21 @@ default set of directories (`.git`, `node_modules`, `bin`, `obj`, `dist`,
 requiring explicit configuration. These names are matched below the scan root
 only, so a repository that itself lives in a folder called `build` is still
 scanned.
+
+### Suppressing a single finding
+
+To silence a known false positive without excluding the whole file, add a
+`codesentinel:ignore` comment on the same line. List rule IDs to limit it to
+specific rules:
+
+```python
+api_key = "documented-example-value"   # codesentinel:ignore
+token = load_fixture("token.txt")      # codesentinel:ignore CS005, CS900
+```
+
+The number of suppressed findings is printed at the end of the scan.
+`--no-inline-ignore` reports them anyway. See
+[ADR 0010](docs/adr/0010-inline-suppression-comments.md).
 
 ### Exit codes
 

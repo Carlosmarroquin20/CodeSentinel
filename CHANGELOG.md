@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   external requests.
 
 ### Added
+- `codesentinel:ignore` comments suppress findings on their line, optionally
+  for specific rule IDs. `--no-inline-ignore` turns them off.
 - `--no-ignore-file` skips the scanned repository's `.codesentinelignore`, for
   scans of code you do not control.
 

@@ -18,3 +18,4 @@ New records copy [`template.md`](template.md) and take the next free number.
 | [0007](0007-parallel-scanning.md) | Parallel scanning with deterministic results | Accepted |
 | [0008](0008-consolidate-overlapping-secret-findings.md) | Consolidate overlapping secret findings | Accepted |
 | [0009](0009-entropy-candidates-limited-to-secret-alphabets.md) | Entropy candidates limited to secret alphabets | Accepted |
+| [0010](0010-inline-suppression-comments.md) | Inline suppression comments | Accepted |

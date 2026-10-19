@@ -73,6 +73,17 @@ public class LocalFileSourceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetFilesAsync_SkipsFilesWithNullBytesRegardlessOfExtension()
+    {
+        File.WriteAllBytes(Path.Combine(_tempDir, "blob.txt"), [0x61, 0x00, 0x62]);
+        File.WriteAllText(Path.Combine(_tempDir, "notes.txt"), "some text");
+
+        var files = await CollectAsync(_source.GetFilesAsync(ScanRequest.ForPath(_tempDir), CancellationToken.None));
+
+        files.Select(f => f.FileName).Should().Equal("notes.txt");
+    }
+
+    [Fact]
     public async Task GetFilesAsync_WithNonExistentRoot_YieldsNothing()
     {
         var request = ScanRequest.ForPath(Path.Combine(_tempDir, "does-not-exist"));

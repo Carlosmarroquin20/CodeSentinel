@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text;
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Core.Detection;
 using CodeSentinel.Core.Scanning;
@@ -77,11 +78,14 @@ internal sealed class LocalFileSource : IFileSource
             ScannableFile? scannableFile = null;
             try
             {
-                if (await BinaryFileDetector.IsBinaryAsync(file, cancellationToken).ConfigureAwait(false))
+                // Files are capped at MaxFileSizeBytes, so reading the whole file once and
+                // reusing the buffer for both the binary check and line splitting is cheaper
+                // than opening it twice.
+                var content = await File.ReadAllBytesAsync(file.FullName, cancellationToken).ConfigureAwait(false);
+                if (BinaryFileDetector.IsBinary(content))
                     continue;
 
-                var lines = await File.ReadAllLinesAsync(file.FullName, cancellationToken).ConfigureAwait(false);
-                scannableFile = new ScannableFile(file.FullName, relativePath, lines);
+                scannableFile = new ScannableFile(file.FullName, relativePath, SplitLines(content));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -115,6 +119,18 @@ internal sealed class LocalFileSource : IFileSource
             foreach (var file in directory.EnumerateFiles("*", WalkOptions))
                 yield return file;
         }
+    }
+
+    // Mirrors File.ReadAllLines: UTF-8 by default, with byte-order-mark detection for
+    // UTF-16 and UTF-32 files.
+    private static List<string> SplitLines(byte[] content)
+    {
+        using var reader = new StreamReader(new MemoryStream(content, writable: false), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        var lines = new List<string>();
+        while (reader.ReadLine() is { } line)
+            lines.Add(line);
+
+        return lines;
     }
 
     private static bool IsEligible(FileInfo file) =>

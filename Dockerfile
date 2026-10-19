@@ -2,7 +2,7 @@
 
 # --- Build stage ------------------------------------------------------------
 # Uses the same SDK major version as the CI runners so analyzers behave the same
-# in both places. The published binary still targets net8.0 and is self-contained.
+# in both places. global.json pins the same major version for local builds.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
@@ -12,7 +12,7 @@ WORKDIR /src
 # files must also be present at restore time.
 # .editorconfig is required too: the build enforces code style, and without
 # it the analyzers fall back to defaults that reject this codebase.
-COPY Directory.Build.props Directory.Packages.props .editorconfig ./
+COPY Directory.Build.props Directory.Packages.props .editorconfig global.json ./
 COPY src/CodeSentinel.Core/CodeSentinel.Core.csproj                     src/CodeSentinel.Core/
 COPY src/CodeSentinel.Application/CodeSentinel.Application.csproj       src/CodeSentinel.Application/
 COPY src/CodeSentinel.Infrastructure/CodeSentinel.Infrastructure.csproj src/CodeSentinel.Infrastructure/
@@ -43,7 +43,7 @@ RUN dotnet publish src/CodeSentinel.Cli/CodeSentinel.Cli.csproj \
 # Chiseled runtime-deps: minimal Ubuntu with the native dependencies .NET needs,
 # but no shell, no package manager, no apt — drastically smaller attack surface.
 # Runs as a non-root user by default.
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-jammy-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled AS runtime
 
 # Repositories will be bind-mounted here at runtime.
 WORKDIR /scan

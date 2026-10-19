@@ -23,10 +23,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up .NET 8 SDK
+      - name: Set up .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
 
       - name: Read version from tag
         id: version
@@ -51,10 +51,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up .NET 8 SDK
+      - name: Set up .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
 
       - name: Pack the global tool
         run: dotnet pack src/CodeSentinel.Cli --configuration Release -p:Version=${{ needs.verify.outputs.version }}

@@ -70,6 +70,42 @@ public class LocalFileSourceTests : IDisposable
         files[0].FileName.Should().Be("notes.txt");
     }
 
+    [Fact]
+    public async Task GetFilesAsync_DoesNotFollowSymbolicLinks()
+    {
+        var outside = Directory.CreateTempSubdirectory("cs-fs-outside-").FullName;
+        try
+        {
+            File.WriteAllText(Path.Combine(outside, "credentials"), "aws_secret = 'outside the scan root'");
+            File.WriteAllText(Path.Combine(_tempDir, "app.py"), "x = 1");
+
+            if (!TryCreateSymbolicLinks(outside))
+                return; // Creating links needs extra privileges on some Windows setups.
+
+            var files = await CollectAsync(_source.GetFilesAsync(ScanRequest.ForPath(_tempDir), CancellationToken.None));
+
+            files.Select(f => f.FileName).Should().Equal("app.py");
+        }
+        finally
+        {
+            Directory.Delete(outside, recursive: true);
+        }
+    }
+
+    private bool TryCreateSymbolicLinks(string outside)
+    {
+        try
+        {
+            File.CreateSymbolicLink(Path.Combine(_tempDir, "linked-file"), Path.Combine(outside, "credentials"));
+            Directory.CreateSymbolicLink(Path.Combine(_tempDir, "linked-dir"), outside);
+            return true;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            return false;
+        }
+    }
+
     public void Dispose()
     {
         _provider.Dispose();

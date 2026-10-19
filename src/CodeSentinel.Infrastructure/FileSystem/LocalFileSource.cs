@@ -28,6 +28,16 @@ internal sealed class LocalFileSource : IFileSource
         ".nupkg", ".snupkg", ".bin", ".dat", ".pyc"
     };
 
+    // Symbolic links and junctions are skipped, never followed. A scanned repository
+    // (especially a cloned remote one) is untrusted input: a link pointing at
+    // ~/.aws/credentials or /etc would otherwise pull files from outside the scan
+    // root into the report.
+    private static readonly EnumerationOptions WalkOptions = new()
+    {
+        RecurseSubdirectories = true,
+        AttributesToSkip = FileAttributes.ReparsePoint,
+    };
+
     private readonly ILogger<LocalFileSource> _logger;
 
     public LocalFileSource(ILogger<LocalFileSource> logger)
@@ -50,7 +60,7 @@ internal sealed class LocalFileSource : IFileSource
             yield break;
         }
 
-        foreach (var file in root.EnumerateFiles("*", SearchOption.AllDirectories))
+        foreach (var file in root.EnumerateFiles("*", WalkOptions))
         {
             if (cancellationToken.IsCancellationRequested)
                 yield break;

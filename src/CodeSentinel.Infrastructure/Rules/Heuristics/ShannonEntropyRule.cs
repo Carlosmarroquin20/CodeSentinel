@@ -52,7 +52,8 @@ internal sealed class ShannonEntropyRule : IDetectionRule
                             file.RelativePath,
                             LineNumber: i + 1,
                             ColumnNumber: match.Index + 1,
-                            Snippet: RedactSnippet(line, match)),
+                            Snippet: RedactSnippet(line, match),
+                            EndColumnNumber: match.Index + match.Length + 1),
                         RuleConfidence));
                 }
             }

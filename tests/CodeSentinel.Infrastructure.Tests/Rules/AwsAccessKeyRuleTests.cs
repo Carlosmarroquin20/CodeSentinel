@@ -28,6 +28,17 @@ public class AwsAccessKeyRuleTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_ReportsStartAndEndColumnOfTheMatch()
+    {
+        var file = MakeFile("key = " + FakeLongTermKeyId + " # comment");
+
+        var findings = await _rule.AnalyzeAsync(file, CancellationToken.None);
+
+        findings[0].Location.ColumnNumber.Should().Be(7);
+        findings[0].Location.EndColumnNumber.Should().Be(7 + FakeLongTermKeyId.Length);
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_SnippetDoesNotExposeRawKey()
     {
         var file = MakeFile("AWS_ACCESS_KEY_ID=" + FakeLongTermKeyId);

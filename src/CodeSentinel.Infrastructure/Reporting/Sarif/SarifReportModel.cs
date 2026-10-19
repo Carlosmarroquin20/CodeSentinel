@@ -51,6 +51,7 @@ internal sealed record SarifArtifactLocation(string Uri);
 internal sealed record SarifRegion(
     int StartLine,
     int StartColumn,
+    int? EndColumn,
     SarifSnippet? Snippet);
 
 internal sealed record SarifSnippet(string Text);

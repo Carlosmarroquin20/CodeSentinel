@@ -87,6 +87,7 @@ internal sealed class SarifReportWriter : IReportWriter
                 Region: new SarifRegion(
                     StartLine: Math.Max(1, finding.Location.LineNumber),
                     StartColumn: Math.Max(1, finding.Location.ColumnNumber),
+                    EndColumn: finding.Location.EndColumnNumber,
                     Snippet: string.IsNullOrEmpty(finding.Location.Snippet)
                         ? null
                         : new SarifSnippet(finding.Location.Snippet)))),

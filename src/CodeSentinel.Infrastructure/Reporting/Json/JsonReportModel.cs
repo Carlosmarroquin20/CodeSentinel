@@ -32,4 +32,5 @@ internal sealed record JsonLocation(
     string File,
     int Line,
     int Column,
+    int? EndColumn,
     string? Snippet);

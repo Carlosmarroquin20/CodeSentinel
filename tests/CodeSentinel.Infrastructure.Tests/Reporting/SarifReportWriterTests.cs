@@ -108,7 +108,7 @@ public class SarifReportWriterTests
     {
         var finding = new Finding(
             "TEST001", "T", "d", Severity.Critical,
-            new FileLocation("src/dir/app.cs", LineNumber: 42, ColumnNumber: 5, Snippet: "leak"),
+            new FileLocation("src/dir/app.cs", LineNumber: 42, ColumnNumber: 5, Snippet: "leak", EndColumnNumber: 9),
             Confidence: 0.9);
 
         var root = await ParseRootAsync(BuildReportWithFindings(finding));
@@ -121,6 +121,7 @@ public class SarifReportWriterTests
         var region = location.GetProperty("region");
         region.GetProperty("startLine").GetInt32().Should().Be(42);
         region.GetProperty("startColumn").GetInt32().Should().Be(5);
+        region.GetProperty("endColumn").GetInt32().Should().Be(9);
         region.GetProperty("snippet").GetProperty("text").GetString().Should().Be("leak");
     }
 

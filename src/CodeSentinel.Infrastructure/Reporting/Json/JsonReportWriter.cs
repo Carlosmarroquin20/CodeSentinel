@@ -60,5 +60,6 @@ internal sealed class JsonReportWriter : IReportWriter
             File: f.Location.FilePath,
             Line: f.Location.LineNumber,
             Column: f.Location.ColumnNumber,
+            EndColumn: f.Location.EndColumnNumber,
             Snippet: f.Location.Snippet));
 }

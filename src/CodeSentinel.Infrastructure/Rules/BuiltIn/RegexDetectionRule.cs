@@ -53,7 +53,7 @@ internal abstract class RegexDetectionRule : IDetectionRule
             Metadata.Title,
             Metadata.Description,
             Metadata.DefaultSeverity,
-            new FileLocation(file.RelativePath, lineNumber, columnNumber, snippet),
+            new FileLocation(file.RelativePath, lineNumber, columnNumber, snippet, columnNumber + match.Length),
             confidence);
     }
 

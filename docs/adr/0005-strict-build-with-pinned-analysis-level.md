@@ -37,3 +37,9 @@ flag code the newer SDKs accept, and it did not copy `.editorconfig`.
 - The project still targets `net8.0` while building with newer SDKs. Moving the
   target framework to .NET 10 (LTS) is tracked separately and should also add a
   `global.json` that pins the SDK.
+
+## Update 2026-10-19
+
+The projects now target `net10.0`, `global.json` pins the 10.0 SDK, and
+`AnalysisLevel` was raised to `10.0-recommended`. The new level introduced no
+diagnostics in this codebase.

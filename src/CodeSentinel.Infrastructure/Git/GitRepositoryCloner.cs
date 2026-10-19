@@ -30,6 +30,13 @@ internal sealed class GitRepositoryCloner : IRepositoryCloner
             var options = new CloneOptions();
             options.FetchOptions.OnTransferProgress = _ => !cancellationToken.IsCancellationRequested;
 
+            // Only the current tree is scanned, so history is never needed. A shallow
+            // clone transfers a fraction of the objects for repositories with long
+            // histories. libgit2's local transport cannot fetch shallowly, so local
+            // paths still get a full clone.
+            if (!IsLocalSource(remoteUrl))
+                options.FetchOptions.Depth = 1;
+
             try
             {
                 Repository.Clone(remoteUrl, tempPath, options);
@@ -45,6 +52,9 @@ internal sealed class GitRepositoryCloner : IRepositoryCloner
             return new ClonedGitRepository(tempPath, _logger);
         }, cancellationToken);
     }
+
+    private static bool IsLocalSource(string remoteUrl) =>
+        remoteUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase) || Directory.Exists(remoteUrl);
 }
 
 internal sealed class ClonedGitRepository : IClonedRepository

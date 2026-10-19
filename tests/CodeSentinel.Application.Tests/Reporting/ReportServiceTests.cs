@@ -97,6 +97,33 @@ public class ReportServiceTests : IDisposable
         service.SupportedFormats.Should().Contain("json");
     }
 
+    [Fact]
+    public async Task WriteReportAsync_WhenWriterFails_LeavesNoFileBehind()
+    {
+        var outputPath = Path.Combine(_tempDir, "report.sarif");
+        await using var provider = BuildProviderWithWriter(new FailingReportWriter("sarif"));
+        var service = provider.GetRequiredService<IReportService>();
+
+        var act = () => service.WriteReportAsync(BuildReport(), outputPath, "sarif", CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        Directory.GetFiles(_tempDir).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task WriteReportAsync_WhenWriterFails_KeepsThePreviousReport()
+    {
+        var outputPath = Path.Combine(_tempDir, "report.sarif");
+        File.WriteAllText(outputPath, "previous");
+        await using var provider = BuildProviderWithWriter(new FailingReportWriter("sarif"));
+        var service = provider.GetRequiredService<IReportService>();
+
+        var act = () => service.WriteReportAsync(BuildReport(), outputPath, "sarif", CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        File.ReadAllText(outputPath).Should().Be("previous");
+    }
+
     public void Dispose()
     {
         Directory.Delete(_tempDir, recursive: true);
@@ -123,6 +150,18 @@ public class ReportServiceTests : IDisposable
             ScannedAt: DateTimeOffset.UtcNow,
             ScannerVersion: "0.1.0",
             Result: result);
+    }
+
+    // Writes part of a report, then fails, like a serializer error or a cancellation would.
+    private sealed class FailingReportWriter(string format) : IReportWriter
+    {
+        public string Format { get; } = format;
+
+        public async Task WriteAsync(ScanReport report, Stream output, CancellationToken cancellationToken)
+        {
+            await output.WriteAsync("{ \"partial\": "u8.ToArray(), cancellationToken);
+            throw new InvalidOperationException("writer failed");
+        }
     }
 
     // Concrete test double — records whether WriteAsync was invoked.

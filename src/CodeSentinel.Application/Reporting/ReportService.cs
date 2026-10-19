@@ -40,9 +40,42 @@ internal sealed class ReportService : IReportService
 
         _logger.LogInformation("Writing {Format} report to {Path}", format, outputPath);
 
-        await using var stream = File.Create(outputPath);
-        await writer.WriteAsync(report, stream, cancellationToken).ConfigureAwait(false);
+        // Write to a sibling temp file and move it into place only once the writer has
+        // finished. A failed or cancelled write must not leave a truncated report behind:
+        // CI steps such as SARIF upload run even when the scan step fails and would pick
+        // it up as if it were complete.
+        var tempPath = outputPath + ".tmp";
+        try
+        {
+            await using (var stream = File.Create(tempPath))
+            {
+                await writer.WriteAsync(report, stream, cancellationToken).ConfigureAwait(false);
+            }
+
+            File.Move(tempPath, outputPath, overwrite: true);
+        }
+        catch
+        {
+            TryDelete(tempPath);
+            throw;
+        }
 
         _logger.LogInformation("Report written successfully");
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            // Best effort: the original exception is the one worth surfacing.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Same as above.
+        }
     }
 }

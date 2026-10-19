@@ -56,6 +56,11 @@ internal static class CliApplication
             description: "Do not read " + IgnoreFileName + " from the scan root. Use this when scanning "
                        + "repositories you do not control, whose ignore file could hide files from the scan.");
 
+        var noInlineIgnoreOption = new Option<bool>(
+            aliases: ["--no-inline-ignore"],
+            description: "Report findings even on lines marked with a codesentinel:ignore comment. "
+                       + "Use this when scanning repositories you do not control.");
+
         var verboseOption = new Option<bool>(
             aliases: ["--verbose", "-v"],
             description: "Show debug-level log output, including per-file scan progress.");
@@ -72,6 +77,7 @@ internal static class CliApplication
             failOnOption,
             excludeOption,
             noIgnoreFileOption,
+            noInlineIgnoreOption,
         };
 
         // --verbose and --quiet are applied at Bootstrap time (before the parser runs).
@@ -90,7 +96,8 @@ internal static class CliApplication
                     Output: context.ParseResult.GetValueForOption(outputOption),
                     FailOn: context.ParseResult.GetValueForOption(failOnOption),
                     Excludes: context.ParseResult.GetValueForOption(excludeOption) ?? [],
-                    UseIgnoreFile: !context.ParseResult.GetValueForOption(noIgnoreFileOption));
+                    UseIgnoreFile: !context.ParseResult.GetValueForOption(noIgnoreFileOption),
+                    HonorInlineSuppressions: !context.ParseResult.GetValueForOption(noInlineIgnoreOption));
 
                 // Ctrl+C is surfaced through the invocation context; the caller's token is
                 // still honoured so tests and hosts can cancel programmatically.
@@ -241,7 +248,7 @@ internal static class CliApplication
 
         var ignoreGlobs = GatherIgnoreGlobs(path, options, logger);
         var orchestrator = services.GetRequiredService<IScanOrchestrator>();
-        var request = new ScanRequest(path.FullName, ignoreGlobs);
+        var request = new ScanRequest(path.FullName, ignoreGlobs, options.HonorInlineSuppressions);
         var result = await orchestrator.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
         logger.LogInformation(
@@ -379,7 +386,8 @@ internal static class CliApplication
         FileInfo? Output,
         Severity? FailOn,
         IReadOnlyList<string> Excludes,
-        bool UseIgnoreFile);
+        bool UseIgnoreFile,
+        bool HonorInlineSuppressions);
 
     private static string GetScannerVersion() =>
         typeof(CliApplication).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";

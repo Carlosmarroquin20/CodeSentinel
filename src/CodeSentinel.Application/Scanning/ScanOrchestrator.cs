@@ -37,6 +37,7 @@ internal sealed class ScanOrchestrator : IScanOrchestrator
         var sw = Stopwatch.StartNew();
         var findings = new List<Finding>();
         var filesScanned = 0;
+        var suppressedCount = 0;
         var rules = _ruleProvider.GetRules().ToList();
 
         // Rules are stateless and CPU-bound, so files are analysed concurrently, one per
@@ -57,6 +58,13 @@ internal sealed class ScanOrchestrator : IScanOrchestrator
                 _logger.LogDebug("Scanning {RelativePath}", file.RelativePath);
 
                 var fileFindings = await AnalyzeFileAsync(file, rules, token).ConfigureAwait(false);
+                if (request.HonorInlineSuppressions)
+                {
+                    fileFindings = InlineSuppression.Apply(file, fileFindings, out var suppressed);
+                    if (suppressed > 0)
+                        Interlocked.Add(ref suppressedCount, suppressed);
+                }
+
                 if (fileFindings.Count == 0)
                     return;
 
@@ -74,6 +82,9 @@ internal sealed class ScanOrchestrator : IScanOrchestrator
         var consolidated = OverlappingSecretFilter.Apply(findings, secretRuleIds);
 
         sw.Stop();
+        if (suppressedCount > 0)
+            _logger.LogInformation("{Count} finding(s) suppressed by codesentinel:ignore comments", suppressedCount);
+
         var score = _scorePolicy.Compute(consolidated, filesScanned);
 
         _logger.LogInformation(

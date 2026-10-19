@@ -30,7 +30,7 @@ internal sealed class JsonReportWriter : IReportWriter
         // Sort findings by severity descending so the most critical issues appear first.
         var sortedFindings = report.Result.Findings
             .OrderByDescending(f => f.Severity)
-            .ThenBy(f => f.Location.FilePath)
+            .ThenBy(f => f.Location.FilePath, StringComparer.Ordinal)
             .ThenBy(f => f.Location.LineNumber)
             .Select(MapFinding)
             .ToList();

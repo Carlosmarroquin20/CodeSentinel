@@ -8,7 +8,7 @@ Security scanner for source code repositories. Detects exposed secrets, insecure
 coding patterns, and misconfigurations — then assigns a security score so the
 result is easy to act on in code review and CI/CD.
 
-Built from scratch on .NET 8 with a clean, extensible architecture: rules are
+Built from scratch on .NET 10 with a clean, extensible architecture: rules are
 plug-in components, file sources can be swapped (local paths and Git remotes),
 and report writers compose freely (JSON, HTML, and SARIF).
 
@@ -409,7 +409,10 @@ Test layout:
 
 ## Requirements
 
-- .NET 8 SDK or newer
+- .NET 10 SDK to build. `global.json` pins the 10.0 SDK (any 10.0.x feature
+  band), so an older SDK on `PATH` will refuse to build the repository.
+- .NET 10 runtime to run the global tool. The Docker image is self-contained
+  and needs nothing installed.
 - Windows, Linux, or macOS
 
 ## Repository layout

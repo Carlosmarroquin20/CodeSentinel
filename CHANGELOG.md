@@ -56,6 +56,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Findings in `ScanResult` are sorted by path, line, column and rule ID.
 - Remote repositories are cloned with depth 1. Scanning `serilog/serilog` went
   from about 40 s to about 3 s.
+- Target framework moved from .NET 8 to .NET 10 (LTS); .NET 8 reaches end of
+  support in November 2026. `global.json` pins the 10.0 SDK, the Docker runtime
+  image is `runtime-deps:10.0-noble-chiseled`, and `AnalysisLevel` is
+  `10.0-recommended`. The benchmark scan got about 11% faster on the new
+  runtime.
+- Removed unused dependencies (`Microsoft.Extensions.Hosting`, `Configuration`,
+  `Configuration.Binder`, `Options`); the CLI ships 19 assemblies instead of 34.
 - Build: `AnalysisLevel` is pinned, the Docker image builds with the same SDK
   major version as CI, and CI now packs the tool and builds the image.
 

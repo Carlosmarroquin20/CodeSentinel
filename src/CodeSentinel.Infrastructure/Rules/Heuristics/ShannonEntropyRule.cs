@@ -12,9 +12,13 @@ internal sealed class ShannonEntropyRule : IDetectionRule
     // Lower confidence than pattern-based rules: entropy is a heuristic and produces more false positives.
     private const double RuleConfidence = 0.6;
 
-    // Targets quoted string literals long enough to be candidate secrets.
+    // Targets quoted literals made only of the alphabets secrets are generated from:
+    // base64, base64url and hex. Paths, XML keys, MSBuild expressions, regexes and
+    // documentation references contain other punctuation and are long and varied
+    // enough to pass the entropy threshold, which made them the main source of false
+    // positives.
     private static readonly Regex CandidatePattern = new(
-        @"[""']([^""'\s\\]{" + MinCandidateLength + @",})[""']",
+        @"[""']([A-Za-z0-9+/=_-]{" + MinCandidateLength + @",})[""']",
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         matchTimeout: TimeSpan.FromSeconds(1));
 
@@ -41,7 +45,7 @@ internal sealed class ShannonEntropyRule : IDetectionRule
             foreach (Match match in CandidatePattern.Matches(line))
             {
                 var candidate = match.Groups[1].Value;
-                if (ComputeEntropy(candidate) >= EntropyThreshold)
+                if (HasDigitAndLetter(candidate) && ComputeEntropy(candidate) >= EntropyThreshold)
                 {
                     findings.Add(new Finding(
                         Metadata.Id,
@@ -61,6 +65,11 @@ internal sealed class ShannonEntropyRule : IDetectionRule
 
         return ValueTask.FromResult<IReadOnlyList<Finding>>(findings);
     }
+
+    // Generated secrets mix digits and letters. Long identifiers and word lists
+    // without digits (UserProfileSettingsPanel, src/components/Header) do not.
+    private static bool HasDigitAndLetter(string value) =>
+        value.Any(char.IsAsciiDigit) && value.Any(char.IsAsciiLetter);
 
     private static double ComputeEntropy(string value)
     {

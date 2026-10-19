@@ -1,3 +1,4 @@
+using System.Text;
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Application.DependencyInjection;
 using CodeSentinel.Core.Scanning;
@@ -81,6 +82,20 @@ public class LocalFileSourceTests : IDisposable
         var files = await CollectAsync(_source.GetFilesAsync(ScanRequest.ForPath(_tempDir), CancellationToken.None));
 
         files.Select(f => f.FileName).Should().Equal("notes.txt");
+    }
+
+    [Theory]
+    [InlineData("utf-16")]
+    [InlineData("utf-16BE")]
+    [InlineData("utf-32")]
+    public async Task GetFilesAsync_ReadsWideEncodedTextFilesWithByteOrderMark(string encodingName)
+    {
+        var encoding = Encoding.GetEncoding(encodingName);
+        File.WriteAllText(Path.Combine(_tempDir, "settings.ini"), "first\nsecond", encoding);
+
+        var files = await CollectAsync(_source.GetFilesAsync(ScanRequest.ForPath(_tempDir), CancellationToken.None));
+
+        files.Should().ContainSingle().Which.Lines.Should().Equal("first", "second");
     }
 
     [Fact]

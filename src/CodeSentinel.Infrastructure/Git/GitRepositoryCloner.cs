@@ -19,17 +19,21 @@ internal sealed class GitRepositoryCloner : IRepositoryCloner
         ArgumentException.ThrowIfNullOrWhiteSpace(remoteUrl);
 
         // LibGit2Sharp's Clone is synchronous; run it on a worker thread so the
-        // caller is not blocked. Cancellation cannot be honoured mid-clone (libgit2
-        // does not expose an idiomatic cancel hook), but the wrapping Task still
-        // becomes faulted when the token fires.
+        // caller is not blocked. libgit2 polls the transfer-progress callback while
+        // downloading, and returning false from it aborts the clone, which is how
+        // cancellation reaches an in-flight transfer.
         return Task.Run<IClonedRepository>(() =>
         {
             var tempPath = Path.Combine(Path.GetTempPath(), $"codesentinel-clone-{Guid.NewGuid():N}");
             _logger.LogInformation("Cloning {Url} into {Path}", UrlRedaction.RedactUserInfo(remoteUrl), tempPath);
 
+            var options = new CloneOptions();
+            options.FetchOptions.OnTransferProgress = _ => !cancellationToken.IsCancellationRequested;
+
             try
             {
-                Repository.Clone(remoteUrl, tempPath);
+                Repository.Clone(remoteUrl, tempPath, options);
+                cancellationToken.ThrowIfCancellationRequested();
             }
             catch
             {

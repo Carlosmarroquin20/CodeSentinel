@@ -71,6 +71,17 @@ public class GitRepositoryClonerTests : IDisposable
         await act.Should().ThrowAsync<LibGit2SharpException>();
     }
 
+    [Fact]
+    public async Task CloneAsync_WithCancelledToken_ThrowsOperationCanceled()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var act = async () => await _cloner.CloneAsync(_sourceRepoDir, cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
     public void Dispose()
     {
         ClonedGitRepository.TryDeleteDirectory(_sourceRepoDir, NullLogger<GitRepositoryClonerTests>.Instance);

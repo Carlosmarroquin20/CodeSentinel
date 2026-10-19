@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   aborts an in-flight remote clone.
 - A rule that fails on one file, or a file that cannot be read, no longer
   aborts the whole scan.
+- `CS900` no longer reports paths, XML keys, MSBuild expressions, regular
+  expressions or documentation references. Candidates must use a base64,
+  base64url or hex alphabet and contain both digits and letters. Scanning
+  `serilog/serilog` went from 187 false positives to none.
 - Fixed an intermittent failure in the CLI test suite caused by tests sharing
   the process console in parallel.
 
@@ -39,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scans run files in parallel and read each file once. A benchmark repository
   of 35,000 files went from 7.25 s to 2.33 s with identical findings.
 - Findings in `ScanResult` are sorted by path, line, column and rule ID.
+- Remote repositories are cloned with depth 1. Scanning `serilog/serilog` went
+  from about 40 s to about 3 s.
 - Build: `AnalysisLevel` is pinned, the Docker image builds with the same SDK
   major version as CI, and CI now packs the tool and builds the image.
 

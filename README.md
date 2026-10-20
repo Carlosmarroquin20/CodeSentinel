@@ -324,12 +324,12 @@ JSON report (excerpt):
 {
   "scanner": "CodeSentinel",
   "version": "0.1.0",
-  "scannedAt": "2026-05-08T02:42:22+00:00",
+  "scannedAt": "2026-10-20T03:40:30+00:00",
   "target": "/repo",
   "summary": {
     "filesScanned": 4,
-    "findingCount": 16,
-    "duration": "00:00:00.145",
+    "findingCount": 19,
+    "duration": "00:00:00.069",
     "score": { "value": 0, "grade": "F" }
   },
   "findings": [
@@ -340,8 +340,9 @@ JSON report (excerpt):
       "confidence": 0.9,
       "location": {
         "file": ".env",
-        "line": 5,
+        "line": 12,
         "column": 19,
+        "endColumn": 39,
         "snippet": "AWS_ACCESS_KEY_ID=[REDACTED]"
       }
     }

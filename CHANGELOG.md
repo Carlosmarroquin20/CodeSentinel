@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   expressions or documentation references. Candidates must use a base64,
   base64url or hex alphabet and contain both digits and letters. Scanning
   `serilog/serilog` went from 187 false positives to none.
+- `CS900` no longer reports Subresource Integrity digests (`sha512-...`), which
+  npm writes for every package in `package-lock.json` and HTML uses in
+  `integrity` attributes. A Node project with three lockfiles went from 2,372
+  false positives to none.
 - A report whose writer failed or was cancelled half-way no longer leaves a
   truncated file behind; reports are written to a temporary file and moved
   into place when complete.

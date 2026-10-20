@@ -45,6 +45,11 @@ a variable called `token` matches `CS006`, `CS005` and `CS900`), only the
 highest-severity finding is kept, so one leak counts once. See
 [ADR 0008](docs/adr/0008-consolidate-overlapping-secret-findings.md).
 
+`CS900` skips Subresource Integrity digests (`sha512-…` in `package-lock.json`
+and HTML `integrity` attributes), so lockfiles can be scanned without drowning
+the report in hashes. See
+[ADR 0011](docs/adr/0011-exempt-integrity-digests-from-entropy.md).
+
 Text files are decoded as UTF-8, or as UTF-16/UTF-32 when they start with a
 byte-order mark. Files over 1 MB, binary files and symbolic links are skipped;
 links are never followed, so a committed link cannot pull files from outside

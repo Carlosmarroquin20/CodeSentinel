@@ -287,6 +287,11 @@ CS002  Critical  Secret           AWS Secret Access Key
 CS003  Critical  Secret           Private Key
 CS004  High      Secret           JSON Web Token
 CS005  High      Secret           Hardcoded Credential
+CS006  Critical  Secret           GitHub Token
+CS007  Critical  Secret           Slack Token
+CS008  Critical  Secret           Stripe Secret Key
+CS009  High      Secret           Google API Key
+CS010  High      Secret           npm Access Token
 CS101  Medium    InsecurePattern  Weak Hash Algorithm
 CS900  Medium    Secret           High-Entropy String
 ```

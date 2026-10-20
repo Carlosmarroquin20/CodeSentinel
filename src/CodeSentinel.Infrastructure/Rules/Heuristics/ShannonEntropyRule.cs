@@ -22,6 +22,14 @@ internal sealed class ShannonEntropyRule : IDetectionRule
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         matchTimeout: TimeSpan.FromSeconds(1));
 
+    // Subresource Integrity digests: an algorithm prefix and the base64 digest of the
+    // exact length that algorithm produces. npm lockfiles carry one per package and
+    // HTML script tags use the same format, so they swamped real findings.
+    private static readonly Regex IntegrityDigestPattern = new(
+        @"^(?:sha1-[A-Za-z0-9+/]{27}=|sha256-[A-Za-z0-9+/]{43}=|sha384-[A-Za-z0-9+/]{64}|sha512-[A-Za-z0-9+/]{86}==)$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        matchTimeout: TimeSpan.FromSeconds(1));
+
     public RuleMetadata Metadata { get; } = new(
         Id: "CS900",
         Title: "High-Entropy String",
@@ -45,7 +53,9 @@ internal sealed class ShannonEntropyRule : IDetectionRule
             foreach (Match match in CandidatePattern.Matches(line))
             {
                 var candidate = match.Groups[1].Value;
-                if (HasDigitAndLetter(candidate) && ComputeEntropy(candidate) >= EntropyThreshold)
+                if (HasDigitAndLetter(candidate) &&
+                    !IntegrityDigestPattern.IsMatch(candidate) &&
+                    ComputeEntropy(candidate) >= EntropyThreshold)
                 {
                     findings.Add(new Finding(
                         Metadata.Id,

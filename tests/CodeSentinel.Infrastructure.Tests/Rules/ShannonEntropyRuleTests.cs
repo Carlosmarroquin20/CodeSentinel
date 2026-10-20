@@ -62,6 +62,32 @@ public class ShannonEntropyRuleTests
         findings.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData(@"      ""integrity"": ""sha512-UqC2k6S6B7UrabdInpR1vP43TNaUI/udqV8z2M7gF1qu+hNXSTZoK+g5W2KCxf8q/BuCA59878nesxiMVP434w=="",")]
+    [InlineData(@"      ""integrity"": ""sha1-rMZwR7Ls8k69fMHfbsgeduXcX1M="",")]
+    [InlineData(@"<script src=""app.js"" integrity=""sha384-l7aqr++kIPTmX+hmXLQuvZF4aJ4ZGDg9DSRCzpSjrOEqQhScRuxoNQNSnzrFdwjq""></script>")]
+    [InlineData(@"<link href=""app.css"" integrity=""sha256-o37YhoI/xaFj8VePdooLXJEpYeYAsmj7Uip3yHz4D/I="">")]
+    public async Task AnalyzeAsync_WithIntegrityDigest_ReturnsEmpty(string line)
+    {
+        // npm lockfiles carry one of these per package; a single project produced thousands of findings.
+        var file = new ScannableFile("package-lock.json", "package-lock.json", [line]);
+
+        var findings = await _rule.AnalyzeAsync(file, CancellationToken.None);
+
+        findings.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_WithDigestPrefixButWrongLength_ReturnsFinding()
+    {
+        // Only the exact digest length is exempt, so a prefix alone does not hide a secret.
+        var file = new ScannableFile("config.env", "config.env", [@"token: ""sha512-q8Xr2Lp9Vt9Kw4Zb7Nm1Yc5Hd3Jf6GsT0aB"""]);
+
+        var findings = await _rule.AnalyzeAsync(file, CancellationToken.None);
+
+        findings.Should().ContainSingle().Which.RuleId.Should().Be("CS900");
+    }
+
     [Fact]
     public async Task AnalyzeAsync_SnippetDoesNotExposeRawValue()
     {

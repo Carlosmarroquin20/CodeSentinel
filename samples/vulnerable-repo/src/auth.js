@@ -6,13 +6,13 @@ const config = {
     apiKey: "aBcDeFgHiJkLmNoPqRsTuVwXyZ1234",
     // CS005: hardcoded secret
     secret: "my-super-secret-token-value-xyz",
+    // CS007: Slack bot token shape (fake demo value, does not authenticate)
+    slackBotToken: "xoxb-fakeSlackBotTokenForDemo1234567890",
 };
 
-// CS004: hardcoded JWT (structure is valid but payload is synthetic)
-const devToken =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
-    ".eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMn0" +
-    ".SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+// CS004: hardcoded JWT (structure is valid but payload is synthetic).
+// Kept on one line so the line-oriented regex can match the full token.
+const devToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
 
 function authenticate(username, password) {
     // Placeholder — do not ship this pattern

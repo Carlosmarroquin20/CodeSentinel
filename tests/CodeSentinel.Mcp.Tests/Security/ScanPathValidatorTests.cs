@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CodeSentinel.Mcp.Security;
 using ModelContextProtocol;
 
@@ -143,7 +142,7 @@ public sealed class ScanPathValidatorTests : IDisposable
     public void Resolve_LinkInsideRootPointingOutside_IsRejected()
     {
         var link = Path.Combine(_root, "escape");
-        CreateDirectoryLink(link, _outside);
+        DirectoryLinks.Create(link, _outside);
 
         var act = () => _validator.Resolve("escape");
 
@@ -154,7 +153,7 @@ public sealed class ScanPathValidatorTests : IDisposable
     public void Resolve_DirectoryBelowALink_IsRejected()
     {
         Directory.CreateDirectory(Path.Combine(_outside, "nested"));
-        CreateDirectoryLink(Path.Combine(_root, "escape"), _outside);
+        DirectoryLinks.Create(Path.Combine(_root, "escape"), _outside);
 
         var act = () => _validator.Resolve(Path.Combine("escape", "nested"));
 
@@ -179,33 +178,5 @@ public sealed class ScanPathValidatorTests : IDisposable
         }
 
         Directory.Delete(_temp, recursive: true);
-    }
-
-    // Symbolic links need Developer Mode or elevation on Windows; junctions do not, and
-    // are the link type a repository checkout is more likely to contain there.
-    private static void CreateDirectoryLink(string link, string target)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            Directory.CreateSymbolicLink(link, target);
-            return;
-        }
-
-        var startInfo = new ProcessStartInfo("cmd.exe")
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        startInfo.ArgumentList.Add("/c");
-        startInfo.ArgumentList.Add("mklink");
-        startInfo.ArgumentList.Add("/J");
-        startInfo.ArgumentList.Add(link);
-        startInfo.ArgumentList.Add(target);
-
-        using var process = Process.Start(startInfo)!;
-        process.WaitForExit();
-        process.ExitCode.Should().Be(0, "creating a junction does not need elevation");
     }
 }

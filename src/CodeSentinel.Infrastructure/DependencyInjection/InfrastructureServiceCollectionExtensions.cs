@@ -19,6 +19,7 @@ public static class InfrastructureServiceCollectionExtensions
         // from ScanRequest.IgnoreGlobs so --exclude and .codesentinelignore patterns
         // flow through the request rather than through DI.
         services.AddSingleton<IFileSource, LocalFileSource>();
+        services.AddSingleton<IIgnoreFileReader, IgnoreFileReader>();
         services.AddSingleton<IRuleProvider, BuiltInRuleProvider>();
         services.AddSingleton<IReportWriter, JsonReportWriter>();
         services.AddSingleton<IReportWriter, HtmlReportWriter>();

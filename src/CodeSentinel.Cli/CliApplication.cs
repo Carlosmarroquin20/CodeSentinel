@@ -18,7 +18,7 @@ internal static class CliApplication
     public const int ExitScanError = 2;
 
     private const string DefaultFormat = "json";
-    private const string IgnoreFileName = ".codesentinelignore";
+    private const string IgnoreFileName = IIgnoreFileReader.FileName;
 
     public static async Task<int> RunAsync(
         string[] args,
@@ -246,7 +246,7 @@ internal static class CliApplication
             return ExitScanError;
         }
 
-        var ignoreGlobs = GatherIgnoreGlobs(path, options, logger);
+        var ignoreGlobs = GatherIgnoreGlobs(path, options, services, logger);
         var orchestrator = services.GetRequiredService<IScanOrchestrator>();
         var request = new ScanRequest(path.FullName, ignoreGlobs, options.HonorInlineSuppressions);
         var result = await orchestrator.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
@@ -346,38 +346,20 @@ internal static class CliApplication
     private static List<string> GatherIgnoreGlobs(
         DirectoryInfo scanRoot,
         ScanOptions options,
+        IServiceProvider services,
         ILogger logger)
     {
         var globs = new List<string>(options.Excludes);
-        var ignoreFile = new FileInfo(Path.Combine(scanRoot.FullName, IgnoreFileName));
-
-        if (!ignoreFile.Exists)
-            return globs;
 
         if (!options.UseIgnoreFile)
         {
-            logger.LogInformation("Ignoring {File} because --no-ignore-file was given", IgnoreFileName);
+            if (File.Exists(Path.Combine(scanRoot.FullName, IgnoreFileName)))
+                logger.LogInformation("Ignoring {File} because --no-ignore-file was given", IgnoreFileName);
             return globs;
         }
 
-        try
-        {
-            var fromFile = File.ReadAllLines(ignoreFile.FullName)
-                .Select(line => line.Trim())
-                .Where(line => line.Length > 0 && !line.StartsWith('#'))
-                .ToList();
-
-            if (fromFile.Count > 0)
-            {
-                globs.AddRange(fromFile);
-                logger.LogInformation("Loaded {Count} pattern(s) from {File}", fromFile.Count, IgnoreFileName);
-            }
-        }
-        catch (IOException ex)
-        {
-            logger.LogWarning(ex, "Could not read {File}; proceeding without it", IgnoreFileName);
-        }
-
+        var reader = services.GetRequiredService<IIgnoreFileReader>();
+        globs.AddRange(reader.ReadPatterns(scanRoot.FullName));
         return globs;
     }
 

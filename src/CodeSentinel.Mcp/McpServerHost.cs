@@ -1,5 +1,6 @@
 using CodeSentinel.Application.DependencyInjection;
 using CodeSentinel.Infrastructure.DependencyInjection;
+using CodeSentinel.Mcp.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -41,7 +42,8 @@ internal static class McpServerHost
             {
                 options.ServerInfo = new() { Name = "codesentinel", Version = GetServerVersion() };
             })
-            .WithStdioServerTransport();
+            .WithStdioServerTransport()
+            .WithTools<RuleTools>();
 
         return builder.Build();
     }

@@ -1,5 +1,6 @@
 using CodeSentinel.Application.DependencyInjection;
 using CodeSentinel.Infrastructure.DependencyInjection;
+using CodeSentinel.Mcp.Security;
 using CodeSentinel.Mcp.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,6 +11,8 @@ namespace CodeSentinel.Mcp;
 
 internal static class McpServerHost
 {
+    // Throws ArgumentException when the arguments or the allowed roots are invalid.
+    //
     // The empty builder is used on purpose: the default one reads appsettings.json and
     // environment variables from the working directory, which is usually the repository
     // the agent is working on, and adds a console logger that writes to stdout. With the
@@ -18,10 +21,15 @@ internal static class McpServerHost
     {
         ArgumentNullException.ThrowIfNull(args);
 
+        var workingDirectory = Directory.GetCurrentDirectory();
+        var allowedRoots = AllowedRoots.Parse(
+            args,
+            Environment.GetEnvironmentVariable(AllowedRoots.EnvironmentVariable),
+            workingDirectory);
+
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings
         {
-            Args = args,
-            ContentRootPath = Directory.GetCurrentDirectory(),
+            ContentRootPath = workingDirectory,
         });
 
         builder.Logging.SetMinimumLevel(LogLevel.Information);
@@ -36,6 +44,8 @@ internal static class McpServerHost
 
         builder.Services.AddCodeSentinelApplication();
         builder.Services.AddCodeSentinelInfrastructure();
+        builder.Services.AddSingleton(allowedRoots);
+        builder.Services.AddSingleton<ScanPathValidator>();
 
         builder.Services
             .AddMcpServer(options =>

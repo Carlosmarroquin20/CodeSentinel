@@ -15,9 +15,10 @@ and report writers compose freely (JSON, HTML, and SARIF).
 ## Status
 
 MVP complete. Scanning engine, scoring, JSON/HTML/SARIF reporting, CLI surface,
-Docker image, GitHub Actions integration, remote-repository support, and
-distribution as a .NET global tool are all in place, with tests across the
-Core, Application, Infrastructure, and CLI layers.
+Docker image, GitHub Actions integration, remote-repository support,
+distribution as a .NET global tool, and an MCP server for AI agents are all in
+place, with tests across the Core, Application, Infrastructure, CLI, and MCP
+layers.
 
 ## What it detects
 
@@ -250,6 +251,141 @@ docker run --rm -v "$(pwd):/scan" codesentinel /scan -o /scan/report.sarif --fai
 The image runs as a non-root user. The mounted volume must allow that user to
 read source files and (if `--output` is used) write into the chosen directory.
 
+## AI agents (MCP server)
+
+`codesentinel-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io)
+server that lets AI coding agents such as Claude Code, Cursor, VS Code and
+Claude Desktop run CodeSentinel as a tool while they work. It uses the same
+scanning engine as the CLI and talks to the client over stdio. It is read-only:
+it never writes or changes files, never clones remote repositories, and never
+returns a secret value. Snippets are redacted exactly as in reports.
+
+| Tool           | Arguments | Returns |
+| -------------- | --------- | ------- |
+| `scan_path`    | `path` (required), `minSeverity`, `maxFindings` (default 50, at most 500), `useIgnoreFile`, `honorInlineSuppressions` | Score and grade, files scanned, counts per severity, and findings with rule, severity, file, line, column, message and redacted snippet, most severe first. |
+| `list_rules`   | none | Every rule with its id, title, category, severity and description. |
+| `explain_rule` | `ruleId` | What the rule detects, why it is a risk, the steps to fix a finding, and how to suppress a false positive. |
+
+### Building the server
+
+```sh
+dotnet publish src/CodeSentinel.Mcp -c Release -o artifacts/mcp
+```
+
+This produces `artifacts/mcp/codesentinel-mcp.dll`, which runs with
+`dotnet artifacts/mcp/codesentinel-mcp.dll` on any machine with the .NET 10
+runtime. The examples below use absolute paths; replace them with yours.
+
+### Allowed roots
+
+`scan_path` only reads directories inside the allowed roots fixed when the
+server starts. The agent cannot change them.
+
+1. `--allowed-root <path>`, repeatable, if given;
+2. otherwise `CODESENTINEL_MCP_ALLOWED_ROOTS`, with paths separated by `;` on
+   Windows and `:` elsewhere;
+3. otherwise the directory the client starts the server in.
+
+Relative paths sent by the agent are resolved against the first root. Paths
+outside the roots, paths through a symbolic link or junction, UNC paths and Git
+URLs are rejected with an error that lists the roots. Not every client starts
+servers in the project directory, so pass `--allowed-root` explicitly. The
+reasoning is in [ADR 0012](docs/adr/0012-mcp-server-over-stdio.md).
+
+### Registering in Claude Code
+
+```sh
+claude mcp add --scope user codesentinel -- dotnet /path/to/CodeSentinel/artifacts/mcp/codesentinel-mcp.dll --allowed-root /path/to/your/project
+```
+
+`--scope user` makes the server available in every project; leave it out to
+register it for the current project only. Run `claude mcp list`, or `/mcp`
+inside Claude Code, to check that it connected.
+
+### Registering in other clients
+
+Cursor (`.cursor/mcp.json` in the project or `~/.cursor/mcp.json`) and Claude
+Desktop (`claude_desktop_config.json`) use the same format:
+
+```json
+{
+  "mcpServers": {
+    "codesentinel": {
+      "command": "dotnet",
+      "args": [
+        "/path/to/CodeSentinel/artifacts/mcp/codesentinel-mcp.dll",
+        "--allowed-root",
+        "/path/to/your/project"
+      ]
+    }
+  }
+}
+```
+
+VS Code (`.vscode/mcp.json`) uses a `servers` key and can pass the open
+workspace as the root:
+
+```json
+{
+  "servers": {
+    "codesentinel": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "/path/to/CodeSentinel/artifacts/mcp/codesentinel-mcp.dll",
+        "--allowed-root",
+        "${workspaceFolder}"
+      ]
+    }
+  }
+}
+```
+
+On Windows, write paths in JSON with forward slashes (`C:/src/app`) or escaped
+backslashes (`C:\\src\\app`).
+
+### Example conversation
+
+Run against `samples/vulnerable-repo`:
+
+> **You:** Before I push, check this repository for leaked credentials.
+>
+> *The agent calls `scan_path` with `{"path": ".", "minSeverity": "High"}` and
+> receives (excerpt):*
+>
+> ```json
+> {
+>   "score": 0,
+>   "grade": "F",
+>   "findingsBySeverity": { "critical": 5, "high": 10, "medium": 4, "low": 0, "info": 0 },
+>   "totalFindings": 19,
+>   "matchingFindings": 15,
+>   "truncated": false,
+>   "findings": [
+>     {
+>       "ruleId": "CS001",
+>       "severity": "Critical",
+>       "file": ".env",
+>       "line": 12,
+>       "column": 19,
+>       "message": "An AWS access key ID was detected. This credential provides access to AWS services.",
+>       "snippet": "AWS_ACCESS_KEY_ID=[REDACTED]",
+>       "confidence": 0.9
+>     }
+>   ]
+> }
+> ```
+>
+> *It then calls `explain_rule` with `{"ruleId": "CS001"}` to learn how to fix it.*
+>
+> **Agent:** The scan scored 0 (F). There are 15 high or critical findings in
+> `.env`, `src/auth.js` and `src/config.py`. The most urgent are the AWS, GitHub,
+> Stripe and Slack credentials. Deleting them from the files is not enough,
+> because they stay in Git history, so revoke each one with its provider first.
+> For the AWS key on line 12 of `.env`, deactivate it in IAM and check
+> CloudTrail for its use. Then load the values from environment variables and
+> add `.env` to `.gitignore`. Do you want me to move them out of the code?
+
 ## Releasing
 
 Pushing a tag such as `v0.2.0` runs `.github/workflows/release.yml`, which:
@@ -364,9 +500,9 @@ easy to triage at a glance.
 CodeSentinel follows clean architecture with strict, inward-pointing dependencies:
 
 ```
-Cli ──┬──→ Application ──→ Core
-      │
-      └──→ Infrastructure ──→ Application, Core
+Cli, Mcp ──┬──→ Application ──→ Core
+           │
+           └──→ Infrastructure ──→ Application, Core
 ```
 
 | Project                       | Responsibility                                                   |
@@ -375,6 +511,7 @@ Cli ──┬──→ Application ──→ Core
 | `CodeSentinel.Application`    | Use cases and ports (file source, rule provider, report writer). |
 | `CodeSentinel.Infrastructure` | Adapters: file walker, built-in rules, JSON/HTML/SARIF writers, Git cloner. |
 | `CodeSentinel.Cli`            | Command-line entry point and DI composition root.                |
+| `CodeSentinel.Mcp`            | MCP server for AI agents (stdio) and its DI composition root.    |
 
 **Why this structure:** the scanning core has zero external dependencies — no
 I/O, no Git, no HTTP. Detection rules are `IDetectionRule` implementations,
@@ -417,19 +554,20 @@ Test layout:
 | `CodeSentinel.Application.Tests`     | Orchestrator, report service, DI wiring.                |
 | `CodeSentinel.Infrastructure.Tests`  | File walker, individual rules, writers, integration.    |
 | `CodeSentinel.Cli.Tests`             | End-to-end CLI invocations against real fixtures.       |
+| `CodeSentinel.Mcp.Tests`             | MCP tools, path validation, redaction, stdio protocol.  |
 
 ## Requirements
 
 - .NET 10 SDK to build. `global.json` pins the 10.0 SDK (any 10.0.x feature
   band), so an older SDK on `PATH` will refuse to build the repository.
-- .NET 10 runtime to run the global tool. The Docker image is self-contained
+- .NET 10 runtime to run the global tool and the MCP server. The Docker image is self-contained
   and needs nothing installed.
 - Windows, Linux, or macOS
 
 ## Repository layout
 
 ```
-src/         Production projects (Core, Application, Infrastructure, Cli).
+src/         Production projects (Core, Application, Infrastructure, Cli, Mcp).
 tests/       Unit and integration test projects.
 samples/     Deliberately-vulnerable fixtures used by tests and demos.
 docs/adr/    Architecture Decision Records.

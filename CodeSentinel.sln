@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSentinel.Infrastructure
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSentinel.Cli.Tests", "tests\CodeSentinel.Cli.Tests\CodeSentinel.Cli.Tests.csproj", "{14A0ED18-22EC-4258-ACB6-D99E4111DB52}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSentinel.Mcp", "src\CodeSentinel.Mcp\CodeSentinel.Mcp.csproj", "{2FFC5780-2D40-461E-86C3-DB250FEC0B10}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,18 @@ Global
 		{14A0ED18-22EC-4258-ACB6-D99E4111DB52}.Release|x64.Build.0 = Release|Any CPU
 		{14A0ED18-22EC-4258-ACB6-D99E4111DB52}.Release|x86.ActiveCfg = Release|Any CPU
 		{14A0ED18-22EC-4258-ACB6-D99E4111DB52}.Release|x86.Build.0 = Release|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Debug|x64.Build.0 = Debug|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Debug|x86.Build.0 = Debug|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Release|x64.ActiveCfg = Release|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Release|x64.Build.0 = Release|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Release|x86.ActiveCfg = Release|Any CPU
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -142,5 +156,6 @@ Global
 		{F6240197-399E-472F-BC72-B3700933D6DA} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{74B48C00-9EF3-4BB3-A7B3-2E0E14905EBE} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{14A0ED18-22EC-4258-ACB6-D99E4111DB52} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{2FFC5780-2D40-461E-86C3-DB250FEC0B10} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

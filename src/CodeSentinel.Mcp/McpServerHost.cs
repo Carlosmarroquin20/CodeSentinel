@@ -1,0 +1,51 @@
+using CodeSentinel.Application.DependencyInjection;
+using CodeSentinel.Infrastructure.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+
+namespace CodeSentinel.Mcp;
+
+internal static class McpServerHost
+{
+    // The empty builder is used on purpose: the default one reads appsettings.json and
+    // environment variables from the working directory, which is usually the repository
+    // the agent is working on, and adds a console logger that writes to stdout. With the
+    // stdio transport stdout carries the protocol, so every log line goes to stderr.
+    public static IHost Build(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            Args = args,
+            ContentRootPath = Directory.GetCurrentDirectory(),
+        });
+
+        builder.Logging.SetMinimumLevel(LogLevel.Information);
+        builder.Logging.AddSimpleConsole(options =>
+        {
+            options.SingleLine = true;
+            options.TimestampFormat = "HH:mm:ss ";
+        });
+        builder.Services.Configure<ConsoleLoggerOptions>(options =>
+            options.LogToStandardErrorThreshold = LogLevel.Trace);
+        builder.Services.Configure<ConsoleLifetimeOptions>(options => options.SuppressStatusMessages = true);
+
+        builder.Services.AddCodeSentinelApplication();
+        builder.Services.AddCodeSentinelInfrastructure();
+
+        builder.Services
+            .AddMcpServer(options =>
+            {
+                options.ServerInfo = new() { Name = "codesentinel", Version = GetServerVersion() };
+            })
+            .WithStdioServerTransport();
+
+        return builder.Build();
+    }
+
+    private static string GetServerVersion() =>
+        typeof(McpServerHost).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+}

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>CodeSentinel.Mcp</RootNamespace>
+    <AssemblyName>codesentinel-mcp</AssemblyName>
+    <Description>Model Context Protocol server that exposes CodeSentinel to AI agents over stdio.</Description>
+    <RollForward>LatestMajor</RollForward>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeSentinel.Application\CodeSentinel.Application.csproj" />
+    <ProjectReference Include="..\CodeSentinel.Infrastructure\CodeSentinel.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="ModelContextProtocol" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CodeSentinel.Mcp.Tests" />
+  </ItemGroup>
+
+</Project>

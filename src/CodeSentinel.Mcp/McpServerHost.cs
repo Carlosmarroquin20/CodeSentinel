@@ -51,12 +51,20 @@ internal static class McpServerHost
             .AddMcpServer(options =>
             {
                 options.ServerInfo = new() { Name = "codesentinel", Version = GetServerVersion() };
+                options.ServerInstructions = ServerInstructions;
             })
             .WithStdioServerTransport()
-            .WithTools<RuleTools>();
+            .WithTools<RuleTools>()
+            .WithTools<ScanTools>();
 
         return builder.Build();
     }
+
+    private const string ServerInstructions =
+        "CodeSentinel is a read-only security scanner for local source code. Call scan_path on a "
+        + "directory to get a security score and the secrets or insecure patterns it contains; secret "
+        + "values are always redacted. Call list_rules to see what can be detected. Only directories "
+        + "inside the allowed roots configured when the server was started can be scanned.";
 
     private static string GetServerVersion() =>
         typeof(McpServerHost).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";

@@ -12,3 +12,14 @@ internal sealed record RuleSummary(
 internal sealed record RuleListResult(
     int Count,
     IReadOnlyList<RuleSummary> Rules);
+
+internal sealed record ExplainRuleResult(
+    string Id,
+    string Title,
+    string Category,
+    string Severity,
+    string Summary,
+    string Detects,
+    string Risk,
+    IReadOnlyList<string> Remediation,
+    string Suppression);

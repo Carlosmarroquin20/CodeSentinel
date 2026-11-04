@@ -10,6 +10,7 @@ public sealed class ToolRegistrationTests
     [Theory]
     [InlineData("list_rules")]
     [InlineData("scan_path")]
+    [InlineData("explain_rule")]
     public void Server_RegistersToolAsReadOnly(string name)
     {
         var tool = GetTool(name);

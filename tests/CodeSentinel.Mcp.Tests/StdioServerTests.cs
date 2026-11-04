@@ -102,7 +102,7 @@ public sealed class StdioServerTests
 
         var tools = await client.ListToolsAsync();
 
-        tools.Select(tool => tool.Name).Should().Contain(["list_rules", "scan_path"]);
+        tools.Select(tool => tool.Name).Should().Contain(["list_rules", "scan_path", "explain_rule"]);
     }
 
     [Fact]

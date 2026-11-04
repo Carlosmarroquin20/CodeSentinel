@@ -20,3 +20,4 @@ New records copy [`template.md`](template.md) and take the next free number.
 | [0009](0009-entropy-candidates-limited-to-secret-alphabets.md) | Entropy candidates limited to secret alphabets | Accepted |
 | [0010](0010-inline-suppression-comments.md) | Inline suppression comments | Accepted |
 | [0011](0011-exempt-integrity-digests-from-entropy.md) | Exempt integrity digests from the entropy rule | Accepted |
+| [0012](0012-mcp-server-over-stdio.md) | MCP server over stdio for AI agents | Accepted |

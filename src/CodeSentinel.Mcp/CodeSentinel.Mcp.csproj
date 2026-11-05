@@ -9,6 +9,30 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <!-- dotnet global tool packaging metadata, kept in line with CodeSentinel.Cli -->
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>codesentinel-mcp</ToolCommandName>
+    <PackageId>CodeSentinel.Mcp</PackageId>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/nupkg</PackageOutputPath>
+    <PackageTags>security;scanner;secrets;sast;devsecops;mcp;ai-agents</PackageTags>
+    <PackageProjectUrl>$(CodeSentinelProjectUrl)</PackageProjectUrl>
+    <RepositoryUrl>$(CodeSentinelProjectUrl)</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageDescription>
+      Model Context Protocol server for CodeSentinel. Lets AI coding agents such as Claude Code and
+      Cursor scan local directories for exposed secrets and insecure code over stdio. Read-only,
+      returns secret values redacted, and only scans inside the allowed roots it is started with.
+    </PackageDescription>
+  </PropertyGroup>
+
+  <!-- README is one level up from the project; pull it into the package root -->
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\CodeSentinel.Application\CodeSentinel.Application.csproj" />
     <ProjectReference Include="..\CodeSentinel.Infrastructure\CodeSentinel.Infrastructure.csproj" />

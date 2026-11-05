@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cancellation (Ctrl+C) and unexpected errors exit with code `2` instead of
   `1`, which is reserved for findings above the threshold. Ctrl+C now also
   aborts an in-flight remote clone.
+- Invalid command-line arguments, such as a missing target, an unknown option
+  or `--fail-on wrong`, exit with code `2` instead of `1`.
 - A rule that fails on one file, or a file that cannot be read, no longer
   aborts the whole scan.
 - `CS900` no longer reports paths, XML keys, MSBuild expressions, regular
@@ -76,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Configuration.Binder`, `Options`); the CLI ships 19 assemblies instead of 34.
 - Build: `AnalysisLevel` is pinned, the Docker image builds with the same SDK
   major version as CI, and CI now packs the tool and builds the image.
+- System.CommandLine moved from `2.0.0-beta4` to the stable `2.0.14`. Options,
+  help text and exit codes are unchanged. After Ctrl+C the CLI waits up to 10
+  seconds for an aborted clone to clean up before the process ends.
 
 ### Documentation
 - Architecture Decision Records in `docs/adr/`.

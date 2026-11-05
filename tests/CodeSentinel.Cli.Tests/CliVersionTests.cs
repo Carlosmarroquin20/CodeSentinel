@@ -3,11 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeSentinel.Cli.Tests;
 
-// Tests for --version and --help short-circuit behavior introduced by UseDefaults.
-// Stdout content is not asserted here: System.CommandLine's SystemConsole caches
-// Console.Out at parser-build time, so Console.SetOut redirects from inside the
-// test process are not observed. The actual rendered text is exercised via
-// integration runs (and verified manually during development).
+// Tests for --version and --help, which short-circuit before the target argument is
+// validated. System.CommandLine 2.0 reads Console.Out when each invocation starts, so
+// the output can be captured with Console.SetOut; test parallelization is disabled for
+// this assembly (see AssemblyInfo.cs).
 public class CliVersionTests : IAsyncDisposable
 {
     private readonly ServiceProvider _provider = Bootstrap.BuildServiceProvider();
@@ -15,16 +14,25 @@ public class CliVersionTests : IAsyncDisposable
     [Fact]
     public async Task VersionFlag_ExitsZeroAndDoesNotRequireTarget()
     {
-        // --version short-circuits before the parser validates the target argument.
-        var exit = await CliApplication.RunAsync(["--version"], _provider);
+        var (exit, _) = await RunCapturedAsync("--version");
 
         exit.Should().Be(CliApplication.ExitSuccess);
+    }
+
+    // System.CommandLine prints the entry assembly's version. Inside the test run that is
+    // the test host, not codesentinel, so only the shape of the output is checked here.
+    [Fact]
+    public async Task VersionFlag_PrintsASingleVersionLine()
+    {
+        var (_, stdout) = await RunCapturedAsync("--version");
+
+        stdout.Trim().Should().MatchRegex(@"^\d+\.\d+\.\d+\S*$");
     }
 
     [Fact]
     public async Task HelpFlag_ExitsZeroAndDoesNotRequireTarget()
     {
-        var exit = await CliApplication.RunAsync(["--help"], _provider);
+        var (exit, _) = await RunCapturedAsync("--help");
 
         exit.Should().Be(CliApplication.ExitSuccess);
     }
@@ -34,9 +42,57 @@ public class CliVersionTests : IAsyncDisposable
     [InlineData("-?")]
     public async Task HelpShortAliases_AlsoWork(string alias)
     {
-        var exit = await CliApplication.RunAsync([alias], _provider);
+        var (exit, stdout) = await RunCapturedAsync(alias);
 
         exit.Should().Be(CliApplication.ExitSuccess);
+        stdout.Should().Contain("Usage:");
+    }
+
+    [Fact]
+    public async Task HelpFlag_ListsTargetOptionsAndSubcommand()
+    {
+        var (_, stdout) = await RunCapturedAsync("--help");
+
+        stdout.Should().Contain("CodeSentinel - security scanner for source repositories.");
+        stdout.Should().Contain("<target>");
+        stdout.Should().Contain("-f, --format");
+        stdout.Should().Contain("-o, --output");
+        stdout.Should().Contain("--fail-on");
+        stdout.Should().Contain("-e, --exclude");
+        stdout.Should().Contain("--no-ignore-file");
+        stdout.Should().Contain("--no-inline-ignore");
+        stdout.Should().Contain("-v, --verbose");
+        stdout.Should().Contain("-q, --quiet");
+        stdout.Should().Contain("--version");
+        stdout.Should().Contain("list-rules");
+    }
+
+    [Fact]
+    public async Task SubcommandHelp_IncludesTheRecursiveVerbosityOptions()
+    {
+        var (exit, stdout) = await RunCapturedAsync("list-rules", "--help");
+
+        exit.Should().Be(CliApplication.ExitSuccess);
+        stdout.Should().Contain("List all detection rules registered in the scanner.");
+        stdout.Should().Contain("-v, --verbose");
+        stdout.Should().Contain("-q, --quiet");
+    }
+
+    private async Task<(int ExitCode, string Stdout)> RunCapturedAsync(params string[] args)
+    {
+        var original = Console.Out;
+        try
+        {
+            using var captured = new StringWriter();
+            Console.SetOut(captured);
+
+            var exit = await CliApplication.RunAsync(args, _provider);
+            return (exit, captured.ToString());
+        }
+        finally
+        {
+            Console.SetOut(original);
+        }
     }
 
     public async ValueTask DisposeAsync()

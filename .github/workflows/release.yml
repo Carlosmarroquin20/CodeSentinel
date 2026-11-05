@@ -1,9 +1,9 @@
 name: release
 
 # Publishes a release when a version tag such as v0.2.0 is pushed:
-#   - the .NET global tool package, attached to a GitHub Release
+#   - the .NET global tool packages (CLI and MCP server), attached to a GitHub Release
 #   - the Docker image, pushed to GitHub Container Registry
-#   - the package on nuget.org, only if the NUGET_API_KEY secret is configured
+#   - the packages on nuget.org, only if the NUGET_API_KEY secret is configured
 
 on:
   push:
@@ -56,8 +56,10 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Pack the global tool
-        run: dotnet pack src/CodeSentinel.Cli --configuration Release -p:Version=${{ needs.verify.outputs.version }}
+      - name: Pack the global tools
+        run: |
+          dotnet pack src/CodeSentinel.Cli --configuration Release -p:Version=${{ needs.verify.outputs.version }}
+          dotnet pack src/CodeSentinel.Mcp --configuration Release -p:Version=${{ needs.verify.outputs.version }}
 
       - name: Create the GitHub Release
         env:

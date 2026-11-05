@@ -266,15 +266,24 @@ returns a secret value. Snippets are redacted exactly as in reports.
 | `list_rules`   | none | Every rule with its id, title, category, severity and description. |
 | `explain_rule` | `ruleId` | What the rule detects, why it is a risk, the steps to fix a finding, and how to suppress a false positive. |
 
-### Building the server
+### Installing the server
+
+The server ships as a .NET global tool, like the CLI. Pack it and install it
+from the local NuGet output:
 
 ```sh
-dotnet publish src/CodeSentinel.Mcp -c Release -o artifacts/mcp
+dotnet pack src/CodeSentinel.Mcp -c Release
+dotnet tool install --global --add-source ./artifacts/nupkg CodeSentinel.Mcp
 ```
 
-This produces `artifacts/mcp/codesentinel-mcp.dll`, which runs with
-`dotnet artifacts/mcp/codesentinel-mcp.dll` on any machine with the .NET 10
-runtime. The examples below use absolute paths; replace them with yours.
+This puts `codesentinel-mcp` on `PATH`. It needs the .NET 10 runtime. To
+uninstall: `dotnet tool uninstall --global CodeSentinel.Mcp`.
+
+Desktop applications such as Claude Desktop and Cursor do not always see the
+`PATH` of your shell. If a client reports that it cannot start the server, use
+the full path of the command instead: `~/.dotnet/tools/codesentinel-mcp` on
+Linux and macOS, `%USERPROFILE%\.dotnet\tools\codesentinel-mcp.exe` on
+Windows.
 
 ### Allowed roots
 
@@ -295,7 +304,7 @@ reasoning is in [ADR 0012](docs/adr/0012-mcp-server-over-stdio.md).
 ### Registering in Claude Code
 
 ```sh
-claude mcp add --scope user codesentinel -- dotnet /path/to/CodeSentinel/artifacts/mcp/codesentinel-mcp.dll --allowed-root /path/to/your/project
+claude mcp add --scope user codesentinel -- codesentinel-mcp --allowed-root /path/to/your/project
 ```
 
 `--scope user` makes the server available in every project; leave it out to
@@ -311,12 +320,8 @@ Desktop (`claude_desktop_config.json`) use the same format:
 {
   "mcpServers": {
     "codesentinel": {
-      "command": "dotnet",
-      "args": [
-        "/path/to/CodeSentinel/artifacts/mcp/codesentinel-mcp.dll",
-        "--allowed-root",
-        "/path/to/your/project"
-      ]
+      "command": "codesentinel-mcp",
+      "args": ["--allowed-root", "/path/to/your/project"]
     }
   }
 }
@@ -330,12 +335,8 @@ workspace as the root:
   "servers": {
     "codesentinel": {
       "type": "stdio",
-      "command": "dotnet",
-      "args": [
-        "/path/to/CodeSentinel/artifacts/mcp/codesentinel-mcp.dll",
-        "--allowed-root",
-        "${workspaceFolder}"
-      ]
+      "command": "codesentinel-mcp",
+      "args": ["--allowed-root", "${workspaceFolder}"]
     }
   }
 }
@@ -391,11 +392,11 @@ Run against `samples/vulnerable-repo`:
 Pushing a tag such as `v0.2.0` runs `.github/workflows/release.yml`, which:
 
 1. builds and tests the solution with that version;
-2. packs the global tool and attaches the `.nupkg` to a GitHub Release with
-   generated notes;
+2. packs both global tools, `CodeSentinel.Cli` and `CodeSentinel.Mcp`, and
+   attaches the `.nupkg` files to a GitHub Release with generated notes;
 3. pushes the Docker image to `ghcr.io/<owner>/codesentinel` tagged `0.2.0`,
    `0.2` and `latest`;
-4. publishes the package to nuget.org, but only when a `NUGET_API_KEY`
+4. publishes both packages to nuget.org, but only when a `NUGET_API_KEY`
    repository secret is configured.
 
 ```sh

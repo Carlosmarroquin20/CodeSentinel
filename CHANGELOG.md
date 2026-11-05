@@ -20,8 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agents such as Claude Code and Cursor call `scan_path`, `list_rules` and
   `explain_rule`. It is read-only, returns secrets redacted, and only scans
   directories inside the allowed roots set when it starts (`--allowed-root` or
-  `CODESENTINEL_MCP_ALLOWED_ROOTS`, defaulting to the working directory). See
-  ADR 0012.
+  `CODESENTINEL_MCP_ALLOWED_ROOTS`, defaulting to the working directory). It
+  installs as the `CodeSentinel.Mcp` global tool and is released together with
+  the CLI. See ADR 0012.
 - `codesentinel:ignore` comments suppress findings on their line, optionally
   for specific rule IDs. `--no-inline-ignore` turns them off.
 - `--no-ignore-file` skips the scanned repository's `.codesentinelignore`, for

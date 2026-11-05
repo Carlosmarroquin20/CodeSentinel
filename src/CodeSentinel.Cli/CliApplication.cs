@@ -1,6 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Application.Security;
 using CodeSentinel.Core.Findings;
@@ -20,54 +18,73 @@ internal static class CliApplication
     private const string DefaultFormat = "json";
     private const string IgnoreFileName = IIgnoreFileReader.FileName;
 
+    // Ctrl+C and SIGTERM cancel the token passed to the scan. System.CommandLine then
+    // waits this long for the action to finish before ending the process (2 seconds by
+    // default). Aborting a remote clone and deleting its temporary directory can take
+    // longer than that (ADR 0006).
+    private static readonly TimeSpan ProcessTerminationTimeout = TimeSpan.FromSeconds(10);
+
     public static async Task<int> RunAsync(
         string[] args,
         IServiceProvider services,
         CancellationToken cancellationToken = default)
     {
-        var targetArgument = new Argument<string>(
-            name: "target",
-            description: "Local repository path or Git remote URL "
-                       + "(https://..., git@..., ssh://..., or git://...).");
-
-        var formatOption = new Option<string?>(
-            aliases: ["--format", "-f"],
-            description: "Report format (json, html, sarif). Inferred from --output extension when omitted; defaults to json.");
-
-        var outputOption = new Option<FileInfo?>(
-            aliases: ["--output", "-o"],
-            description: "Write the scan report to this path. If omitted, no report file is generated.");
-
-        var failOnOption = new Option<Severity?>(
-            aliases: ["--fail-on"],
-            description: "Minimum severity (Info, Low, Medium, High, Critical) that triggers exit code 1. "
-                       + "If omitted, any finding causes exit code 1.");
-
-        var excludeOption = new Option<string[]>(
-            aliases: ["--exclude", "-e"],
-            description: "Glob pattern to exclude from the scan. Repeatable. Combined with patterns from "
-                       + IgnoreFileName + " in the scan root, if present.")
+        var targetArgument = new Argument<string>("target")
         {
+            Description = "Local repository path or Git remote URL "
+                        + "(https://..., git@..., ssh://..., or git://...).",
+        };
+
+        var formatOption = new Option<string?>("--format", "-f")
+        {
+            Description = "Report format (json, html, sarif). Inferred from --output extension when omitted; "
+                        + "defaults to json.",
+        };
+
+        var outputOption = new Option<FileInfo?>("--output", "-o")
+        {
+            Description = "Write the scan report to this path. If omitted, no report file is generated.",
+        };
+
+        var failOnOption = new Option<Severity?>("--fail-on")
+        {
+            Description = "Minimum severity (Info, Low, Medium, High, Critical) that triggers exit code 1. "
+                        + "If omitted, any finding causes exit code 1.",
+        };
+
+        var excludeOption = new Option<string[]>("--exclude", "-e")
+        {
+            Description = "Glob pattern to exclude from the scan. Repeatable. Combined with patterns from "
+                        + IgnoreFileName + " in the scan root, if present.",
             AllowMultipleArgumentsPerToken = true,
         };
 
-        var noIgnoreFileOption = new Option<bool>(
-            aliases: ["--no-ignore-file"],
-            description: "Do not read " + IgnoreFileName + " from the scan root. Use this when scanning "
-                       + "repositories you do not control, whose ignore file could hide files from the scan.");
+        var noIgnoreFileOption = new Option<bool>("--no-ignore-file")
+        {
+            Description = "Do not read " + IgnoreFileName + " from the scan root. Use this when scanning "
+                        + "repositories you do not control, whose ignore file could hide files from the scan.",
+        };
 
-        var noInlineIgnoreOption = new Option<bool>(
-            aliases: ["--no-inline-ignore"],
-            description: "Report findings even on lines marked with a codesentinel:ignore comment. "
-                       + "Use this when scanning repositories you do not control.");
+        var noInlineIgnoreOption = new Option<bool>("--no-inline-ignore")
+        {
+            Description = "Report findings even on lines marked with a codesentinel:ignore comment. "
+                        + "Use this when scanning repositories you do not control.",
+        };
 
-        var verboseOption = new Option<bool>(
-            aliases: ["--verbose", "-v"],
-            description: "Show debug-level log output, including per-file scan progress.");
+        // --verbose and --quiet are applied at Bootstrap time (before the parser runs).
+        // They are declared here so they appear in --help, and are recursive so every
+        // subcommand accepts them instead of reporting an unknown argument.
+        var verboseOption = new Option<bool>("--verbose", "-v")
+        {
+            Description = "Show debug-level log output, including per-file scan progress.",
+            Recursive = true,
+        };
 
-        var quietOption = new Option<bool>(
-            aliases: ["--quiet", "-q"],
-            description: "Suppress informational log output. Warnings and errors are still shown.");
+        var quietOption = new Option<bool>("--quiet", "-q")
+        {
+            Description = "Suppress informational log output. Warnings and errors are still shown.",
+            Recursive = true,
+        };
 
         var rootCommand = new RootCommand("CodeSentinel - security scanner for source repositories.")
         {
@@ -78,52 +95,41 @@ internal static class CliApplication
             excludeOption,
             noIgnoreFileOption,
             noInlineIgnoreOption,
+            verboseOption,
+            quietOption,
         };
 
-        // --verbose and --quiet are applied at Bootstrap time (before the parser runs).
-        // They are registered here as global options so they appear in --help and are
-        // accepted on every subcommand without being treated as unknown arguments.
-        rootCommand.AddGlobalOption(verboseOption);
-        rootCommand.AddGlobalOption(quietOption);
+        rootCommand.SetAction(async (parseResult, invocationToken) =>
+        {
+            var target = parseResult.GetValue(targetArgument)!;
+            var options = new ScanOptions(
+                Format: parseResult.GetValue(formatOption),
+                Output: parseResult.GetValue(outputOption),
+                FailOn: parseResult.GetValue(failOnOption),
+                Excludes: parseResult.GetValue(excludeOption) ?? [],
+                UseIgnoreFile: !parseResult.GetValue(noIgnoreFileOption),
+                HonorInlineSuppressions: !parseResult.GetValue(noInlineIgnoreOption));
 
-        var exitCode = ExitSuccess;
-        rootCommand.SetHandler(
-            async (context) =>
-            {
-                var target = context.ParseResult.GetValueForArgument(targetArgument);
-                var options = new ScanOptions(
-                    Format: context.ParseResult.GetValueForOption(formatOption),
-                    Output: context.ParseResult.GetValueForOption(outputOption),
-                    FailOn: context.ParseResult.GetValueForOption(failOnOption),
-                    Excludes: context.ParseResult.GetValueForOption(excludeOption) ?? [],
-                    UseIgnoreFile: !context.ParseResult.GetValueForOption(noIgnoreFileOption),
-                    HonorInlineSuppressions: !context.ParseResult.GetValueForOption(noInlineIgnoreOption));
+            // The invocation token fires on Ctrl+C; the caller's token is still honoured so
+            // tests and hosts can cancel programmatically.
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, invocationToken);
 
-                // Ctrl+C is surfaced through the invocation context; the caller's token is
-                // still honoured so tests and hosts can cancel programmatically.
-                using var linked = CancellationTokenSource.CreateLinkedTokenSource(
-                    cancellationToken, context.GetCancellationToken());
-
-                exitCode = await RunScanSafelyAsync(target, options, services, linked.Token).ConfigureAwait(false);
-            });
+            return await RunScanSafelyAsync(target, options, services, linked.Token).ConfigureAwait(false);
+        });
 
         var listRulesCommand = new Command("list-rules", "List all detection rules registered in the scanner.");
-        listRulesCommand.SetHandler(context =>
+        listRulesCommand.SetAction(_ => ExecuteListRules(services, Console.Out));
+        rootCommand.Subcommands.Add(listRulesCommand);
+
+        // RootCommand adds --help and --version, and the default invocation reports parse
+        // errors and handles Ctrl+C. --version short-circuits before the target argument
+        // is validated, so `codesentinel --version` works without a target.
+        var configuration = new InvocationConfiguration
         {
-            exitCode = ExecuteListRules(services, Console.Out);
-            return Task.CompletedTask;
-        });
-        rootCommand.AddCommand(listRulesCommand);
+            ProcessTerminationTimeout = ProcessTerminationTimeout,
+        };
 
-        // UseDefaults enables --version, --help, parse-error reporting, exception
-        // handling, and Ctrl+C cancellation in one call. --version short-circuits
-        // before the handler so users can run `codesentinel --version` without a target.
-        var parser = new CommandLineBuilder(rootCommand)
-            .UseDefaults()
-            .Build();
-
-        var parseExit = await parser.InvokeAsync(args).ConfigureAwait(false);
-        return parseExit != 0 ? parseExit : exitCode;
+        return await rootCommand.Parse(args).InvokeAsync(configuration, cancellationToken).ConfigureAwait(false);
     }
 
     private static int ExecuteListRules(IServiceProvider services, TextWriter output)

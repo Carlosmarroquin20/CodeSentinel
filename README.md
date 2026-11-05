@@ -201,7 +201,7 @@ CodeSentinel returns deterministic exit codes designed for CI/CD pipelines:
 | ---- | ------------------------------------------------------------------------ |
 | `0`  | Scan completed without findings (or none at or above `--fail-on`).       |
 | `1`  | Scan completed with findings at or above the threshold.                  |
-| `2`  | Scan did not complete: invalid path, clone failure, cancellation (Ctrl+C), or an unexpected error. |
+| `2`  | Scan did not complete: invalid arguments, invalid path, clone failure, cancellation (Ctrl+C), or an unexpected error. |
 
 Code `1` is never used for errors, so a pipeline can tell a dirty repository
 from a broken scan.

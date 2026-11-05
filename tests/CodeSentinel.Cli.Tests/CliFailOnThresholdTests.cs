@@ -72,11 +72,11 @@ public class CliFailOnThresholdTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task FailOn_InvalidSeverity_DoesNotReturnSuccess()
+    public async Task FailOn_InvalidSeverity_ReturnsExitScanError()
     {
         var exit = await CliApplication.RunAsync([_tempDir, "--fail-on", "wrong"], _provider);
 
-        exit.Should().NotBe(CliApplication.ExitSuccess);
+        exit.Should().Be(CliApplication.ExitScanError);
     }
 
     [Fact]

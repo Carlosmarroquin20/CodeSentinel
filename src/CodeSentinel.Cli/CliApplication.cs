@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using CodeSentinel.Application.Abstractions;
 using CodeSentinel.Application.Security;
 using CodeSentinel.Core.Findings;
@@ -129,7 +130,13 @@ internal static class CliApplication
             ProcessTerminationTimeout = ProcessTerminationTimeout,
         };
 
-        return await rootCommand.Parse(args).InvokeAsync(configuration, cancellationToken).ConfigureAwait(false);
+        var parseResult = rootCommand.Parse(args);
+        var exitCode = await parseResult.InvokeAsync(configuration, cancellationToken).ConfigureAwait(false);
+
+        // On invalid arguments the default action prints the errors and the help text and
+        // returns 1. Exit code 1 means "findings at or above the threshold", so a typo in
+        // a CI pipeline would read as a dirty repository; report it as a scan error instead.
+        return parseResult.Action is ParseErrorAction ? ExitScanError : exitCode;
     }
 
     private static int ExecuteListRules(IServiceProvider services, TextWriter output)
